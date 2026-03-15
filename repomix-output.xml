@@ -1,0 +1,2203 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+bank_transfer.c
+check_permissions.sh
+combined_all.sh
+deadlock_detection.cpp
+dining_philosophers.c
+file_guard.sh
+file_size.sh
+file_type.sh
+lab5_1A.c
+lab5_2A.c
+lab5_mutex_semaphores.c
+lab6_1B.c
+lab6_2B.c
+preemptive_priority.cpp
+preemptive_sjf.cpp
+priority_logging.c
+seq_char_print.c
+task1A.sh
+task1B.sh
+task2A.sh
+task2B.sh
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="bank_transfer.c">
+/*
+ * CSE4502 Operating Systems Lab (Bash Scripting 2A) - Part B
+ * Concurrent Multi-Account Transfer System
+ *
+ * Input: Amount1 Amount2 Amount3
+ * Each Amounti satisfies: Amounti * Repeati = 1000, 1000 % Amounti == 0
+ *
+ * Usage: ./bank_transfer
+ * Then enter: 100 50 25
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+int A = 1000, B = 1000, C = 1000;
+
+pthread_mutex_t mutex_A = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_B = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_C = PTHREAD_MUTEX_INITIALIZER;
+
+int amount1, amount2, amount3;
+int repeat1, repeat2, repeat3;
+
+void transfer(int *src, int *dst,
+              pthread_mutex_t *ms, pthread_mutex_t *md,
+              int amount, const char *src_name, const char *dst_name, int tid) {
+
+    /* Lock in pointer order to prevent deadlock */
+    if (ms < md) { pthread_mutex_lock(ms); pthread_mutex_lock(md); }
+    else         { pthread_mutex_lock(md); pthread_mutex_lock(ms); }
+
+    if (*src >= amount) {
+        *src -= amount;
+        *dst += amount;
+        printf("[T%d] Transferred %d from %s to %s\n", tid, amount, src_name, dst_name);
+    }
+
+    pthread_mutex_unlock(ms);
+    pthread_mutex_unlock(md);
+}
+
+void *thread_T1(void *arg) {
+    for (int i = 0; i < repeat1; i++)
+        transfer(&A, &B, &mutex_A, &mutex_B, amount1, "A", "B", 1);
+    printf("After T1 completes: A = %d, B = %d, C = %d\n", A, B, C);
+    return NULL;
+}
+
+void *thread_T2(void *arg) {
+    for (int i = 0; i < repeat2; i++)
+        transfer(&B, &C, &mutex_B, &mutex_C, amount2, "B", "C", 2);
+    printf("After T2 completes: A = %d, B = %d, C = %d\n", A, B, C);
+    return NULL;
+}
+
+void *thread_T3(void *arg) {
+    for (int i = 0; i < repeat3; i++)
+        transfer(&C, &A, &mutex_C, &mutex_A, amount3, "C", "A", 3);
+    printf("After T3 completes: A = %d, B = %d, C = %d\n", A, B, C);
+    return NULL;
+}
+
+int main() {
+    printf("Enter Amount1 Amount2 Amount3: ");
+    scanf("%d %d %d", &amount1, &amount2, &amount3);
+
+    if (1000 % amount1 != 0 || 1000 % amount2 != 0 || 1000 % amount3 != 0) {
+        printf("Error: 1000 must be divisible by each amount.\n");
+        return 1;
+    }
+
+    repeat1 = 1000 / amount1;
+    repeat2 = 1000 / amount2;
+    repeat3 = 1000 / amount3;
+
+    printf("T1: Transfer %d from A->B, %d times\n", amount1, repeat1);
+    printf("T2: Transfer %d from B->C, %d times\n", amount2, repeat2);
+    printf("T3: Transfer %d from C->A, %d times\n", amount3, repeat3);
+    printf("\n");
+
+    pthread_t t1, t2, t3;
+    pthread_create(&t1, NULL, thread_T1, NULL);
+    pthread_create(&t2, NULL, thread_T2, NULL);
+    pthread_create(&t3, NULL, thread_T3, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    pthread_join(t3, NULL);
+
+    printf("\nFinal Balances:\nA = %d\nB = %d\nC = %d\n", A, B, C);
+    printf("Sum = %d (invariant %s)\n", A + B + C, A + B + C == 3000 ? "HOLDS" : "VIOLATED");
+
+    return 0;
+}
+</file>
+
+<file path="check_permissions.sh">
+#!/bin/bash
+# CSE4502 Operating Systems Lab
+# Lab (Bash Scripting) 2A - Part A: File Permission Checker
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <filename>"
+    exit 1
+fi
+
+filename="$1"
+
+if [ ! -e "$filename" ]; then
+    echo "Error: '$filename' does not exist."
+    exit 1
+fi
+
+echo "File: $filename"
+
+if [ -r "$filename" ]; then
+    echo "Readable:   Yes"
+else
+    echo "Readable:   No"
+fi
+
+if [ -w "$filename" ]; then
+    echo "Writable:   Yes"
+else
+    echo "Writable:   No"
+fi
+
+if [ -x "$filename" ]; then
+    echo "Executable: Yes"
+else
+    echo "Executable: No"
+fi
+</file>
+
+<file path="combined_all.sh">
+#!/bin/bash
+# Lab 3 Combined Task - All 6 Algorithms
+# Even/Odd, Prime Number, Factorial, Fibonacci, Largest of Three, Leap Year
+
+echo "================================================"
+echo " Lab 3 - All Algorithms Combined"
+echo "================================================"
+
+# 1. Check Even or Odd
+echo ""
+echo "--- 1. Check Even or Odd ---"
+echo -n "Enter a number: "
+read n
+r=$((n % 2))
+if [ $r -eq 0 ]; then
+    echo "$n is Even"
+else
+    echo "$n is Odd"
+fi
+
+# 2. Check Prime Number
+echo ""
+echo "--- 2. Check Prime Number ---"
+echo -n "Enter a number: "
+read n
+if [ $n -le 1 ]; then
+    echo "$n is NOT a prime number"
+else
+    is_prime=1
+    i=2
+    half=$((n / 2))
+    while [ $i -le $half ]; do
+        r=$((n % i))
+        if [ $r -eq 0 ]; then
+            is_prime=0
+            break
+        fi
+        i=$((i + 1))
+    done
+    if [ $is_prime -eq 1 ]; then
+        echo "$n is a Prime number"
+    else
+        echo "$n is NOT a prime number"
+    fi
+fi
+
+# 3. Find the Factorial of a Number
+echo ""
+echo "--- 3. Factorial of a Number ---"
+echo -n "Enter a number: "
+read n
+if [ $n -lt 0 ]; then
+    echo "Factorial not defined for negative numbers."
+else
+    fact=1
+    temp=$n
+    while [ $temp -gt 0 ]; do
+        fact=$((fact * temp))
+        temp=$((temp - 1))
+    done
+    echo "$n! = $fact"
+fi
+
+# 4. Display Fibonacci Series
+echo ""
+echo "--- 4. Fibonacci Series ---"
+echo -n "Enter number of terms: "
+read n
+if [ $n -le 0 ]; then
+    echo "Enter a positive number."
+elif [ $n -eq 1 ]; then
+    echo "Fibonacci Series: 0"
+else
+    a=0
+    b=1
+    echo -n "Fibonacci Series: $a $b"
+    count=2
+    while [ $count -lt $n ]; do
+        c=$((a + b))
+        echo -n " $c"
+        a=$b
+        b=$c
+        count=$((count + 1))
+    done
+    echo ""
+fi
+
+# 5. Find the Largest of Three Numbers
+echo ""
+echo "--- 5. Largest of Three Numbers ---"
+echo -n "Enter first number: "
+read a
+echo -n "Enter second number: "
+read b
+echo -n "Enter third number: "
+read c
+if [ $a -gt $b ] && [ $a -gt $c ]; then
+    echo "The largest number is: $a"
+elif [ $b -gt $c ]; then
+    echo "The largest number is: $b"
+else
+    echo "The largest number is: $c"
+fi
+
+# 6. Check Leap Year
+echo ""
+echo "--- 6. Check Leap Year ---"
+echo -n "Enter a year: "
+read y
+if [ $((y % 400)) -eq 0 ]; then
+    echo "$y is a Leap Year."
+elif [ $((y % 100)) -eq 0 ]; then
+    echo "$y is NOT a Leap Year."
+elif [ $((y % 4)) -eq 0 ]; then
+    echo "$y is a Leap Year."
+else
+    echo "$y is NOT a Leap Year."
+fi
+</file>
+
+<file path="deadlock_detection.cpp">
+/*
+ * CSE4502 Operating Systems Lab 9: 1B
+ * Deadlock Detection in Single-Instance Resource Systems (RAG Cycle Detection)
+ *
+ * Input format:
+ *   Line 1: N M  (processes 0..N-1, resources 0..M-1)
+ *   Line 2: E    (number of edges)
+ *   Next E lines: u v type
+ *     type "R" -> Process u requests Resource v
+ *     type "A" -> Resource u is assigned to Process v
+ */
+
+#include <iostream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+// Build a directed graph and detect a cycle using DFS
+// Nodes: processes 0..N-1, resources N..N+M-1
+// Edge: request  P_i -> R_j  means edge (i, N+j)
+// Edge: assigned R_j -> P_i  means edge (N+j, i)
+
+int N, M, E;
+vector<vector<int>> adj;
+vector<int> color; // 0=white, 1=gray, 2=black
+
+bool dfs(int u) {
+    color[u] = 1; // Mark as being visited
+    for (int v : adj[u]) {
+        if (color[v] == 1) return true;  // Back edge -> cycle
+        if (color[v] == 0 && dfs(v)) return true;
+    }
+    color[u] = 2; // Fully processed
+    return false;
+}
+
+int main() {
+    cin >> N >> M >> E;
+
+    int totalNodes = N + M;
+    adj.assign(totalNodes, vector<int>());
+    color.assign(totalNodes, 0);
+
+    for (int i = 0; i < E; i++) {
+        int u, v;
+        string type;
+        cin >> u >> v >> type;
+
+        if (type == "R") {
+            // Process u requests Resource v
+            adj[u].push_back(N + v);
+        } else {
+            // Resource u assigned to Process v
+            adj[N + u].push_back(v);
+        }
+    }
+
+    bool hasCycle = false;
+    for (int i = 0; i < totalNodes; i++) {
+        if (color[i] == 0) {
+            if (dfs(i)) { hasCycle = true; break; }
+        }
+    }
+
+    if (hasCycle)
+        cout << "DEADLOCK" << endl;
+    else
+        cout << "NO DEADLOCK" << endl;
+
+    return 0;
+}
+</file>
+
+<file path="dining_philosophers.c">
+/*
+ * CSE4502 Operating Systems Lab 9: 2B
+ * Dining Philosophers - Phase 1: Deadlock Demo, Phase 2: Resolved
+ *
+ * Usage: ./dining <N> <P>
+ *   N = number of philosophers
+ *   P = 1 (deadlock demo) | 2 (resolved, terminates)
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define MAX_PHILOSOPHERS 20
+
+int N;
+pthread_mutex_t forks[MAX_PHILOSOPHERS];
+
+/* ---- State tracking ---- */
+pthread_mutex_t print_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+typedef enum { WAITING_2, WAITING_1, EATING } State;
+State states[MAX_PHILOSOPHERS];
+
+void print_states() {
+    pthread_mutex_lock(&print_mutex);
+    for (int i = 0; i < N; i++) {
+        const char *s;
+        switch (states[i]) {
+            case WAITING_2: s = "Waiting(2 forks)"; break;
+            case WAITING_1: s = "Waiting(1 fork) "; break;
+            case EATING:    s = "Eating          "; break;
+            default:        s = "Unknown         "; break;
+        }
+        printf("P%d:[%s]  ", i, s);
+    }
+    printf("\n");
+    pthread_mutex_unlock(&print_mutex);
+}
+
+/* ============================================================
+ * PHASE 1: Deadlock - every philosopher picks up LEFT fork first
+ * ============================================================ */
+
+void *philosopher_deadlock(void *arg) {
+    int id = *(int *)arg;
+    int left  = id;
+    int right = (id + 1) % N;
+
+    states[id] = WAITING_2;
+    print_states();
+
+    pthread_mutex_lock(&forks[left]);   /* Pick up left fork */
+    states[id] = WAITING_1;
+    print_states();
+    usleep(100000);                      /* Simulate delay - leads to deadlock */
+
+    pthread_mutex_lock(&forks[right]);  /* Try to pick up right - DEADLOCK */
+    states[id] = EATING;
+    print_states();
+    usleep(200000);
+
+    pthread_mutex_unlock(&forks[right]);
+    pthread_mutex_unlock(&forks[left]);
+
+    return NULL;
+}
+
+/* ============================================================
+ * PHASE 2: Resolved - limit table capacity to N-1
+ * ============================================================ */
+
+sem_t room_sem;
+
+void *philosopher_resolved(void *arg) {
+    int id = *(int *)arg;
+
+    for (int meal = 0; meal < 2; meal++) {
+        states[id] = WAITING_2;
+        print_states();
+
+        sem_wait(&room_sem);            /* Limit concurrent diners */
+
+        /* Pick forks in consistent order */
+        int first  = id < (id + 1) % N ? id : (id + 1) % N;
+        int second = id < (id + 1) % N ? (id + 1) % N : id;
+
+        pthread_mutex_lock(&forks[first]);
+        states[id] = WAITING_1;
+        print_states();
+
+        pthread_mutex_lock(&forks[second]);
+        states[id] = EATING;
+        print_states();
+
+        usleep(200000);
+
+        pthread_mutex_unlock(&forks[second]);
+        pthread_mutex_unlock(&forks[first]);
+
+        sem_post(&room_sem);
+        usleep(100000);
+    }
+    return NULL;
+}
+
+/* ============================================================
+ * MAIN
+ * ============================================================ */
+
+int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        printf("Usage: %s <N_philosophers> <phase (1 or 2)>\n", argv[0]);
+        return 1;
+    }
+
+    N = atoi(argv[1]);
+    int phase = atoi(argv[2]);
+
+    if (N < 2 || N > MAX_PHILOSOPHERS) {
+        printf("N must be between 2 and %d\n", MAX_PHILOSOPHERS);
+        return 1;
+    }
+
+    for (int i = 0; i < N; i++) {
+        pthread_mutex_init(&forks[i], NULL);
+        states[i] = WAITING_2;
+    }
+
+    pthread_t philosophers[MAX_PHILOSOPHERS];
+    int ids[MAX_PHILOSOPHERS];
+    for (int i = 0; i < N; i++) ids[i] = i;
+
+    if (phase == 1) {
+        printf("=== PHASE 1: Deadlock Demonstration (will NOT terminate) ===\n");
+        for (int i = 0; i < N; i++)
+            pthread_create(&philosophers[i], NULL, philosopher_deadlock, &ids[i]);
+        for (int i = 0; i < N; i++)
+            pthread_join(philosophers[i], NULL);
+    } else {
+        printf("=== PHASE 2: Resolved Simulation (will terminate) ===\n");
+        sem_init(&room_sem, 0, N - 1);
+        for (int i = 0; i < N; i++)
+            pthread_create(&philosophers[i], NULL, philosopher_resolved, &ids[i]);
+        for (int i = 0; i < N; i++)
+            pthread_join(philosophers[i], NULL);
+        sem_destroy(&room_sem);
+        printf("\nAll philosophers have eaten. System terminated.\n");
+    }
+
+    for (int i = 0; i < N; i++)
+        pthread_mutex_destroy(&forks[i]);
+
+    return 0;
+}
+</file>
+
+<file path="file_guard.sh">
+#!/bin/bash
+# CSE4502 Operating Systems Lab
+# Lab (Bash Scripting) 1A - Part A: File Guard (Conditionals)
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <filename>"
+    exit 1
+fi
+
+filename="$1"
+
+if [ -e "$filename" ]; then
+    if [ -d "$filename" ]; then
+        echo "'$filename' is a directory."
+    elif [ -f "$filename" ]; then
+        echo "'$filename' is a regular file."
+    else
+        echo "'$filename' exists but is neither a regular file nor a directory."
+    fi
+else
+    echo "Error: '$filename' does not exist."
+fi
+</file>
+
+<file path="file_size.sh">
+#!/bin/bash
+# CSE4502 Operating Systems Lab
+# Lab (Bash Scripting) 1B - Part A: File Size Monitor
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <filename>"
+    exit 1
+fi
+
+filename="$1"
+
+if [ ! -e "$filename" ]; then
+    echo "Error: '$filename' does not exist."
+    exit 1
+fi
+
+size=$(stat -c%s "$filename")
+
+echo "File: $filename"
+echo "Size: $size bytes"
+
+if [ "$size" -lt 1000 ]; then
+    echo "Category: Small file"
+elif [ "$size" -le 10000 ]; then
+    echo "Category: Medium file"
+else
+    echo "Category: Large file"
+fi
+</file>
+
+<file path="file_type.sh">
+#!/bin/bash
+# CSE4502 Operating Systems Lab
+# Lab (Bash Scripting) 2B - Part A: File Type Identifier
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <filename>"
+    exit 1
+fi
+
+filename="$1"
+ext="${filename##*.}"
+ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+
+case "$ext_lower" in
+    txt|text)
+        echo "File type: Text File"
+        ;;
+    sh|bash)
+        echo "File type: Shell Script"
+        ;;
+    c)
+        echo "File type: C Source File"
+        ;;
+    cpp|cc|cxx)
+        echo "File type: C++ Source File"
+        ;;
+    h|hpp)
+        echo "File type: Header File"
+        ;;
+    py)
+        echo "File type: Python Script"
+        ;;
+    java)
+        echo "File type: Java Source File"
+        ;;
+    jpg|jpeg|png|gif|bmp|webp)
+        echo "File type: Image File"
+        ;;
+    mp3|wav|ogg|flac)
+        echo "File type: Audio File"
+        ;;
+    mp4|avi|mkv|mov)
+        echo "File type: Video File"
+        ;;
+    pdf)
+        echo "File type: PDF Document"
+        ;;
+    zip|tar|gz|bz2|xz)
+        echo "File type: Archive File"
+        ;;
+    html|htm)
+        echo "File type: HTML File"
+        ;;
+    css)
+        echo "File type: CSS File"
+        ;;
+    js)
+        echo "File type: JavaScript File"
+        ;;
+    *)
+        echo "File type: Unknown File Type (.${ext})"
+        ;;
+esac
+</file>
+
+<file path="lab5_1A.c">
+/*
+ * Lab-5 1A
+ * Part A (Mutex): Multi-Account Transfer System
+ * Part B (Semaphore): Limited-Capacity Transaction Server
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+/* ============================================================
+ * PART A: Multi-Account Transfer System (Mutex)
+ * ============================================================ */
+
+int A = 1000, B = 1000, C = 1000;
+
+pthread_mutex_t mutex_A = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_B = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_C = PTHREAD_MUTEX_INITIALIZER;
+
+/* Helper: transfer amount from src to dst with ordered mutex locking */
+void transfer(int *src, int *dst, pthread_mutex_t *m_src, pthread_mutex_t *m_dst,
+              int amount, const char *src_name, const char *dst_name, int thread_id) {
+
+    /* Lock in a consistent global order to avoid deadlock */
+    if (m_src < m_dst) {
+        pthread_mutex_lock(m_src);
+        pthread_mutex_lock(m_dst);
+    } else {
+        pthread_mutex_lock(m_dst);
+        pthread_mutex_lock(m_src);
+    }
+
+    printf("[T%d] Transfer START: %d from %s -> %s\n", thread_id, amount, src_name, dst_name);
+
+    if (*src >= amount) {
+        *src -= amount;
+        *dst += amount;
+        printf("[T%d] Transfer END:   %d from %s -> %s  (A=%d B=%d C=%d)\n",
+               thread_id, amount, src_name, dst_name, A, B, C);
+    } else {
+        printf("[T%d] Transfer SKIPPED: insufficient funds in %s\n", thread_id, src_name);
+    }
+
+    pthread_mutex_unlock(m_src);
+    pthread_mutex_unlock(m_dst);
+}
+
+void *thread_T1(void *arg) {
+    /* Transfer 100 from A -> B, 10 times */
+    for (int i = 0; i < 10; i++) {
+        transfer(&A, &B, &mutex_A, &mutex_B, 100, "A", "B", 1);
+    }
+    printf("[T1] Done. A=%d B=%d C=%d\n", A, B, C);
+    return NULL;
+}
+
+void *thread_T2(void *arg) {
+    /* Transfer 50 from B -> C, 20 times */
+    for (int i = 0; i < 20; i++) {
+        transfer(&B, &C, &mutex_B, &mutex_C, 50, "B", "C", 2);
+    }
+    printf("[T2] Done. A=%d B=%d C=%d\n", A, B, C);
+    return NULL;
+}
+
+void *thread_T3(void *arg) {
+    /* Transfer 25 from C -> A, 40 times */
+    for (int i = 0; i < 40; i++) {
+        transfer(&C, &A, &mutex_C, &mutex_A, 25, "C", "A", 3);
+    }
+    printf("[T3] Done. A=%d B=%d C=%d\n", A, B, C);
+    return NULL;
+}
+
+/* ============================================================
+ * PART B: Limited-Capacity Transaction Server (Semaphore)
+ * ============================================================ */
+
+#define NUM_CLIENTS 6
+#define MAX_CONCURRENT 3
+
+sem_t server_sem;
+pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
+int being_served[NUM_CLIENTS + 1]; /* 1-indexed */
+int active_count = 0;
+
+void print_status() {
+    pthread_mutex_lock(&status_mutex);
+    for (int i = 1; i <= NUM_CLIENTS; i++) {
+        printf("C%d=%s", i, being_served[i] ? "True" : "False");
+        if (i < NUM_CLIENTS) printf(", ");
+    }
+    printf("\n");
+    pthread_mutex_unlock(&status_mutex);
+}
+
+void *client_thread(void *arg) {
+    int id = *(int *)arg;
+
+    sem_wait(&server_sem);
+
+    pthread_mutex_lock(&status_mutex);
+    being_served[id] = 1;
+    active_count++;
+    pthread_mutex_unlock(&status_mutex);
+
+    print_status();
+    sleep(1); /* Simulate service */
+
+    pthread_mutex_lock(&status_mutex);
+    being_served[id] = 0;
+    active_count--;
+    pthread_mutex_unlock(&status_mutex);
+
+    print_status();
+    sem_post(&server_sem);
+
+    return NULL;
+}
+
+/* ============================================================
+ * MAIN
+ * ============================================================ */
+
+int main() {
+    printf("===== PART A: Multi-Account Transfer System =====\n");
+    pthread_t t1, t2, t3;
+    pthread_create(&t1, NULL, thread_T1, NULL);
+    pthread_create(&t2, NULL, thread_T2, NULL);
+    pthread_create(&t3, NULL, thread_T3, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    pthread_join(t3, NULL);
+    printf("Final: A=%d, B=%d, C=%d (Sum=%d)\n\n", A, B, C, A + B + C);
+
+    printf("===== PART B: Limited-Capacity Transaction Server =====\n");
+    sem_init(&server_sem, 0, MAX_CONCURRENT);
+
+    pthread_t clients[NUM_CLIENTS];
+    int ids[NUM_CLIENTS];
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+        ids[i] = i + 1;
+        being_served[i + 1] = 0;
+    }
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+        pthread_create(&clients[i], NULL, client_thread, &ids[i]);
+        usleep(50000); /* slight stagger so output is readable */
+    }
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+        pthread_join(clients[i], NULL);
+    }
+    sem_destroy(&server_sem);
+
+    return 0;
+}
+</file>
+
+<file path="lab5_2A.c">
+/*
+ * Lab-5 2A
+ * Part A (Mutex): Priority Logging System
+ * Part B (Semaphore): Ordered Startup System
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <string.h>
+
+/* ============================================================
+ * PART A: Priority Logging System (Mutex)
+ * ============================================================ */
+
+#define MAX_MESSAGES 16
+#define MSG_LEN 64
+
+typedef struct {
+    int priority;       /* 0 = HIGH, 1 = LOW */
+    char message[MSG_LEN];
+} LogEntry;
+
+LogEntry log_buffer[MAX_MESSAGES];
+int log_count = 0;
+pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void log_message(int priority, const char *msg) {
+    pthread_mutex_lock(&log_mutex);
+    log_buffer[log_count].priority = priority;
+    strncpy(log_buffer[log_count].message, msg, MSG_LEN - 1);
+    log_count++;
+    pthread_mutex_unlock(&log_mutex);
+}
+
+/* Thread functions for Part A */
+void *low_network(void *arg) {
+    usleep(10000);
+    log_message(1, "Network OK");
+    return NULL;
+}
+void *high_disk(void *arg) {
+    usleep(10000);
+    log_message(0, "Disk Failure");
+    return NULL;
+}
+void *low_login(void *arg) {
+    usleep(10000);
+    log_message(1, "User Login");
+    return NULL;
+}
+void *high_power(void *arg) {
+    usleep(10000);
+    log_message(0, "Power Surge");
+    return NULL;
+}
+
+/* ============================================================
+ * PART B: Ordered Startup System (Semaphore)
+ * ============================================================ */
+
+sem_t sem_nav;    /* Signals: Power is ready -> Comm can proceed */
+sem_t sem_launch; /* Signals: Comm is ready  -> Control can proceed */
+
+void *power_thread(void *arg) {
+    usleep(rand() % 100000); /* random start delay */
+    printf("[Power Thread] Power Initialized. Signal sent.\n");
+    sem_post(&sem_nav);
+    return NULL;
+}
+
+void *comm_thread(void *arg) {
+    usleep(rand() % 100000);
+    printf("[Comm Thread] Waiting for Signal...\n");
+    sem_wait(&sem_nav);
+    printf("[Comm Thread] Communication Initialized. Signal sent.\n");
+    sem_post(&sem_launch);
+    return NULL;
+}
+
+void *control_thread(void *arg) {
+    usleep(rand() % 100000);
+    printf("[Control Thread] Waiting for Signal...\n");
+    sem_wait(&sem_launch);
+    printf("[Control Thread] Control System Initialized.\n");
+    return NULL;
+}
+
+/* ============================================================
+ * MAIN
+ * ============================================================ */
+
+int main() {
+    printf("===== PART A: Priority Logging System =====\n");
+
+    pthread_t t1, t2, t3, t4;
+    pthread_create(&t1, NULL, low_network, NULL);
+    pthread_create(&t2, NULL, high_disk,   NULL);
+    pthread_create(&t3, NULL, low_login,   NULL);
+    pthread_create(&t4, NULL, high_power,  NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    pthread_join(t3, NULL);
+    pthread_join(t4, NULL);
+
+    /* Sort buffer: HIGH (0) before LOW (1) */
+    for (int i = 0; i < log_count - 1; i++) {
+        for (int j = i + 1; j < log_count; j++) {
+            if (log_buffer[i].priority > log_buffer[j].priority) {
+                LogEntry tmp = log_buffer[i];
+                log_buffer[i] = log_buffer[j];
+                log_buffer[j] = tmp;
+            }
+        }
+    }
+
+    printf("\n=== Buffer Dump ===\n");
+    for (int i = 0; i < log_count; i++) {
+        printf("[%s] %s\n",
+               log_buffer[i].priority == 0 ? "HIGH" : "LOW",
+               log_buffer[i].message);
+    }
+
+    printf("\n===== PART B: Ordered Startup System =====\n");
+
+    sem_init(&sem_nav,    0, 0);
+    sem_init(&sem_launch, 0, 0);
+
+    pthread_t pt, ct, ctl;
+    /* Start in random order: Control first, then Comm, then Power */
+    pthread_create(&ctl, NULL, control_thread, NULL);
+    usleep(10000);
+    pthread_create(&ct,  NULL, comm_thread,    NULL);
+    usleep(10000);
+    pthread_create(&pt,  NULL, power_thread,   NULL);
+
+    pthread_join(pt,  NULL);
+    pthread_join(ct,  NULL);
+    pthread_join(ctl, NULL);
+
+    sem_destroy(&sem_nav);
+    sem_destroy(&sem_launch);
+
+    return 0;
+}
+</file>
+
+<file path="lab5_mutex_semaphores.c">
+/*
+ * Lab-5 (Mutexes and Semaphores)
+ * Part 1A (Mutex):  Hot-Swappable Configuration System
+ * Part 1B (Semaphore): Dining Philosophers (Limited Seating)
+ * Part 2A (Mutex):  Thread-Safe Histogram (Sharded Updates)
+ * Part 2B (Semaphore): H2O Bond Formation (Barrier)
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <string.h>
+
+/* ==================================================================
+ * PART 1A: Hot-Swappable Configuration System (Mutex)
+ * Invariant: active_config != NULL at all times
+ * ================================================================== */
+
+int *active_config = NULL;
+pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
+volatile int config_running = 1;
+
+void *updater_thread(void *arg) {
+    int update_num = 0;
+    while (update_num < 3) {
+        sleep(1);
+        int *new_config = (int *)malloc(sizeof(int));
+        *new_config = update_num * 100 + 42;
+
+        pthread_mutex_lock(&config_mutex);
+        int *old_config = active_config;
+        active_config = new_config;  /* Atomic swap under lock */
+        free(old_config);
+        printf("[Updater] Config updated to: %d\n", *active_config);
+        pthread_mutex_unlock(&config_mutex);
+
+        update_num++;
+    }
+    config_running = 0;
+    return NULL;
+}
+
+void *reader_thread(void *arg) {
+    int id = *(int *)arg;
+    while (config_running) {
+        pthread_mutex_lock(&config_mutex);
+        if (active_config != NULL)
+            printf("[Reader %d] Reading config: %d\n", id, *active_config);
+        pthread_mutex_unlock(&config_mutex);
+        usleep(300000);
+    }
+    return NULL;
+}
+
+/* ==================================================================
+ * PART 1B: Dining Philosophers - Limited Seating (Semaphore)
+ * Strategy: Allow at most 4 out of 5 philosophers to sit
+ * ================================================================== */
+
+#define NUM_PHILOSOPHERS 5
+
+sem_t room_capacity;   /* Counting semaphore initialized to 4 */
+pthread_mutex_t forks[NUM_PHILOSOPHERS];
+
+void *philosopher(void *arg) {
+    int id = *(int *)arg;
+    int left  = id;
+    int right = (id + 1) % NUM_PHILOSOPHERS;
+
+    for (int meal = 0; meal < 3; meal++) {
+        printf("[Philosopher %d] Thinking...\n", id);
+        usleep(100000);
+
+        sem_wait(&room_capacity);          /* Wait for a seat */
+        printf("[Philosopher %d] Seated, waiting for forks.\n", id);
+
+        /* Pick up forks in consistent order to avoid deadlock */
+        int first  = left < right ? left  : right;
+        int second = left < right ? right : left;
+        pthread_mutex_lock(&forks[first]);
+        pthread_mutex_lock(&forks[second]);
+
+        printf("[Philosopher %d] Eating (meal %d).\n", id, meal + 1);
+        usleep(100000);
+
+        pthread_mutex_unlock(&forks[second]);
+        pthread_mutex_unlock(&forks[first]);
+
+        sem_post(&room_capacity);          /* Leave the table */
+        printf("[Philosopher %d] Finished eating, left table.\n", id);
+    }
+    return NULL;
+}
+
+/* ==================================================================
+ * PART 2A: Thread-Safe Histogram (Sharded Updates, Mutex)
+ * ================================================================== */
+
+#define HIST_SIZE 10
+#define DATA_SIZE 9
+#define NUM_HIST_THREADS 2
+
+int global_histogram[HIST_SIZE] = {0};
+int data[] = {3, 1, 4, 1, 5, 9, 2, 6, 5};
+pthread_mutex_t hist_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct { int start; int end; } HistRange;
+
+void *histogram_thread(void *arg) {
+    HistRange *range = (HistRange *)arg;
+    int local_hist[HIST_SIZE] = {0};
+
+    for (int i = range->start; i <= range->end; i++) {
+        local_hist[data[i]]++;
+    }
+
+    /* Merge local into global under mutex */
+    pthread_mutex_lock(&hist_mutex);
+    for (int i = 0; i < HIST_SIZE; i++) {
+        global_histogram[i] += local_hist[i];
+    }
+    pthread_mutex_unlock(&hist_mutex);
+    return NULL;
+}
+
+/* ==================================================================
+ * PART 2B: H2O Bond Formation (Barrier, Semaphores only)
+ * ================================================================== */
+
+sem_t h_ready;    /* Counts waiting H atoms */
+sem_t o_ready;    /* Counts waiting O atoms */
+sem_t bond_mutex; /* Binary semaphore for bond printing */
+sem_t h_gate;     /* Controls when H atoms can print */
+sem_t o_gate;     /* Controls when O atoms can print */
+
+int h_count = 0;
+sem_t h_count_mutex;
+
+void *hydrogen_atom(void *arg) {
+    int id = *(int *)arg;
+    printf("[H%d] H Ready\n", id);
+    sem_post(&h_ready);
+
+    sem_wait(&h_gate);  /* Wait until bond is ready */
+    printf("[H%d] Bonding!\n", id);
+    return NULL;
+}
+
+void *oxygen_atom(void *arg) {
+    int id = *(int *)arg;
+    printf("[O%d] O Ready\n", id);
+    sem_post(&o_ready);
+
+    sem_wait(&o_gate);  /* Wait until two H atoms are ready */
+
+    /* Collect two H atoms and form bond */
+    sem_wait(&h_ready);
+    sem_wait(&h_ready);
+
+    sem_post(&h_gate);
+    sem_post(&h_gate);
+    sem_post(&o_gate);  /* Allow this O to proceed (itself) */
+
+    printf("[O%d] Bond Formed! (H-H-O)\n", id);
+    return NULL;
+}
+
+/* ==================================================================
+ * MAIN
+ * ================================================================== */
+
+int main() {
+    /* ---- Part 1A ---- */
+    printf("\n===== PART 1A: Hot-Swappable Configuration =====\n");
+    active_config = (int *)malloc(sizeof(int));
+    *active_config = 0;
+
+    int reader_ids[3] = {1, 2, 3};
+    pthread_t updater, readers[3];
+    pthread_create(&updater, NULL, updater_thread, NULL);
+    for (int i = 0; i < 3; i++)
+        pthread_create(&readers[i], NULL, reader_thread, &reader_ids[i]);
+    pthread_join(updater, NULL);
+    for (int i = 0; i < 3; i++)
+        pthread_join(readers[i], NULL);
+    free(active_config);
+    printf("Part 1A complete.\n");
+
+    /* ---- Part 1B ---- */
+    printf("\n===== PART 1B: Dining Philosophers =====\n");
+    sem_init(&room_capacity, 0, NUM_PHILOSOPHERS - 1);
+    for (int i = 0; i < NUM_PHILOSOPHERS; i++)
+        pthread_mutex_init(&forks[i], NULL);
+
+    pthread_t philosophers[NUM_PHILOSOPHERS];
+    int phil_ids[NUM_PHILOSOPHERS];
+    for (int i = 0; i < NUM_PHILOSOPHERS; i++) {
+        phil_ids[i] = i;
+        pthread_create(&philosophers[i], NULL, philosopher, &phil_ids[i]);
+    }
+    for (int i = 0; i < NUM_PHILOSOPHERS; i++)
+        pthread_join(philosophers[i], NULL);
+    sem_destroy(&room_capacity);
+    printf("All philosophers have eaten.\n");
+
+    /* ---- Part 2A ---- */
+    printf("\n===== PART 2A: Thread-Safe Histogram =====\n");
+    HistRange ranges[NUM_HIST_THREADS] = {{0, 4}, {5, 8}};
+    pthread_t hist_threads[NUM_HIST_THREADS];
+    for (int i = 0; i < NUM_HIST_THREADS; i++)
+        pthread_create(&hist_threads[i], NULL, histogram_thread, &ranges[i]);
+    for (int i = 0; i < NUM_HIST_THREADS; i++)
+        pthread_join(hist_threads[i], NULL);
+
+    int total = 0;
+    printf("Histogram:\n");
+    for (int i = 0; i < HIST_SIZE; i++) {
+        printf("  [%d]: %d\n", i, global_histogram[i]);
+        total += global_histogram[i];
+    }
+    printf("Total count: %d (expected %d) - %s\n", total, DATA_SIZE,
+           total == DATA_SIZE ? "INVARIANT HOLDS" : "INVARIANT VIOLATED");
+
+    /* ---- Part 2B ---- */
+    printf("\n===== PART 2B: H2O Bond Formation =====\n");
+    sem_init(&h_ready, 0, 0);
+    sem_init(&o_ready, 0, 0);
+    sem_init(&h_gate,  0, 0);
+    sem_init(&o_gate,  0, 0);
+
+    /* Create 4 H atoms and 2 O atoms (forms 2 water molecules) */
+    int h_ids[4] = {1, 2, 3, 4};
+    int o_ids[2] = {1, 2};
+    pthread_t h_threads[4], o_threads[2];
+
+    for (int i = 0; i < 2; i++)
+        pthread_create(&o_threads[i], NULL, oxygen_atom, &o_ids[i]);
+    for (int i = 0; i < 4; i++)
+        pthread_create(&h_threads[i], NULL, hydrogen_atom, &h_ids[i]);
+
+    for (int i = 0; i < 4; i++) pthread_join(h_threads[i], NULL);
+    for (int i = 0; i < 2; i++) pthread_join(o_threads[i], NULL);
+
+    sem_destroy(&h_ready);
+    sem_destroy(&o_ready);
+    sem_destroy(&h_gate);
+    sem_destroy(&o_gate);
+
+    return 0;
+}
+</file>
+
+<file path="lab6_1B.c">
+/*
+ * Lab 6 - 1B
+ * Part A: Sequential Launch of Space Systems (Semaphore)
+ * Part B: Readers-Writers Synchronization Problem (Semaphore)
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+/* ==================================================================
+ * PART A: Sequential Launch - Fuel -> Navigation -> Launch
+ * sem_nav    : signals that Fuel is ready   (Navigation waits on it)
+ * sem_launch : signals that Navigation ready (Control waits on it)
+ * ================================================================== */
+
+sem_t sem_nav;
+sem_t sem_launch;
+
+void *fuel_thread(void *arg) {
+    usleep(rand() % 100000);
+    printf("[Fuel Thread] Fuel system activated. Signal sent.\n");
+    sem_post(&sem_nav);
+    return NULL;
+}
+
+void *navigation_thread(void *arg) {
+    usleep(rand() % 100000);
+    printf("[Navigation Thread] Waiting for fuel system...\n");
+    sem_wait(&sem_nav);
+    printf("[Navigation Thread] Navigation system online. Signal sent.\n");
+    sem_post(&sem_launch);
+    return NULL;
+}
+
+void *launch_thread(void *arg) {
+    usleep(rand() % 100000);
+    printf("[Launch Thread] Waiting for navigation system...\n");
+    sem_wait(&sem_launch);
+    printf("[Launch Thread] Launch sequence initiated!\n");
+    return NULL;
+}
+
+/* ==================================================================
+ * PART B: Readers-Writers Problem
+ * mutex      : protects read_count
+ * write_block: blocks writers when readers active (and vice versa)
+ * ================================================================== */
+
+int shared_data = 0;
+int read_count  = 0;
+
+sem_t mutex;       /* protects read_count */
+sem_t write_block; /* ensures exclusive write access */
+
+void *reader(void *arg) {
+    int id = *(int *)arg;
+    printf("[Reader %d] Waiting to read...\n", id);
+
+    sem_wait(&mutex);
+    read_count++;
+    if (read_count == 1)
+        sem_wait(&write_block); /* First reader blocks writers */
+    sem_post(&mutex);
+
+    /* --- Critical Section (Read) --- */
+    printf("[Reader %d] Reading data: %d\n", id, shared_data);
+    usleep(100000);
+    /* --- End Critical Section --- */
+
+    sem_wait(&mutex);
+    read_count--;
+    if (read_count == 0)
+        sem_post(&write_block); /* Last reader unblocks writers */
+    sem_post(&mutex);
+
+    return NULL;
+}
+
+void *writer(void *arg) {
+    int id = *(int *)arg;
+    printf("[Writer %d] Waiting to write...\n", id);
+
+    sem_wait(&write_block);
+
+    /* --- Critical Section (Write) --- */
+    printf("[Writer %d] Writing data...\n", id);
+    shared_data++;
+    usleep(150000);
+    printf("[Writer %d] Updated data to %d\n", id, shared_data);
+    /* --- End Critical Section --- */
+
+    sem_post(&write_block);
+
+    return NULL;
+}
+
+/* ==================================================================
+ * MAIN
+ * ================================================================== */
+
+int main() {
+    /* ---- Part A ---- */
+    printf("===== PART A: Sequential Space System Launch =====\n");
+    sem_init(&sem_nav,    0, 0);
+    sem_init(&sem_launch, 0, 0);
+
+    pthread_t pt, nt, lt;
+    /* Threads started in a "wrong" order to demonstrate synchronization */
+    pthread_create(&lt, NULL, launch_thread,     NULL);
+    usleep(5000);
+    pthread_create(&nt, NULL, navigation_thread, NULL);
+    usleep(5000);
+    pthread_create(&pt, NULL, fuel_thread,       NULL);
+
+    pthread_join(pt, NULL);
+    pthread_join(nt, NULL);
+    pthread_join(lt, NULL);
+
+    sem_destroy(&sem_nav);
+    sem_destroy(&sem_launch);
+
+    /* ---- Part B ---- */
+    printf("\n===== PART B: Readers-Writers Problem =====\n");
+    sem_init(&mutex,       0, 1);
+    sem_init(&write_block, 0, 1);
+
+    int reader_ids[3] = {1, 2, 3};
+    int writer_ids[2] = {1, 2};
+    pthread_t readers[3], writers[2];
+
+    /* Start readers and writers concurrently */
+    pthread_create(&readers[0], NULL, reader, &reader_ids[0]);
+    pthread_create(&readers[1], NULL, reader, &reader_ids[1]);
+    pthread_create(&writers[0], NULL, writer, &writer_ids[0]);
+    usleep(50000);
+    pthread_create(&readers[2], NULL, reader, &reader_ids[2]);
+    pthread_create(&writers[1], NULL, writer, &writer_ids[1]);
+
+    for (int i = 0; i < 3; i++) pthread_join(readers[i], NULL);
+    for (int i = 0; i < 2; i++) pthread_join(writers[i], NULL);
+
+    sem_destroy(&mutex);
+    sem_destroy(&write_block);
+
+    return 0;
+}
+</file>
+
+<file path="lab6_2B.c">
+/*
+ * Lab 6 - 2B
+ * Part 1: Parallel Histogram Computation Using Pthreads
+ * Part 2: H2O Bond Formation (Barrier, Semaphores Only)
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+/* ==================================================================
+ * PART 1: Parallel Histogram Computation
+ * ================================================================== */
+
+#define SUB_ARRAY_COUNT 4
+#define SUB_ARRAY_DIM   3
+#define RANGE           10
+
+int data_array[SUB_ARRAY_COUNT][SUB_ARRAY_DIM][SUB_ARRAY_DIM][SUB_ARRAY_DIM];
+int global_histogram[RANGE] = {0};
+pthread_mutex_t hist_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Provided initialization function - do NOT modify */
+void init_data_array() {
+    srand(0);
+    for (int i = 0; i < SUB_ARRAY_COUNT; i++)
+        for (int j = 0; j < SUB_ARRAY_DIM; j++)
+            for (int k = 0; k < SUB_ARRAY_DIM; k++)
+                for (int l = 0; l < SUB_ARRAY_DIM; l++)
+                    data_array[i][j][k][l] = rand() % RANGE;
+}
+
+void *compute_histogram(void *arg) {
+    int sub_id = *(int *)arg;
+    int local_hist[RANGE] = {0};
+
+    /* Compute local histogram for this sub-array */
+    for (int j = 0; j < SUB_ARRAY_DIM; j++)
+        for (int k = 0; k < SUB_ARRAY_DIM; k++)
+            for (int l = 0; l < SUB_ARRAY_DIM; l++)
+                local_hist[data_array[sub_id][j][k][l]]++;
+
+    /* Merge into global histogram under the single allowed mutex */
+    pthread_mutex_lock(&hist_mutex);
+    for (int i = 0; i < RANGE; i++)
+        global_histogram[i] += local_hist[i];
+    pthread_mutex_unlock(&hist_mutex);
+
+    return NULL;
+}
+
+/* ==================================================================
+ * PART 2: H2O Bond Formation (Semaphores Only)
+ *
+ * Strategy:
+ *  - h_sem: H atoms post here to signal they're ready (count of waiting H)
+ *  - o_sem: O atoms post here to signal they're ready (count of waiting O)
+ *  - bond_trigger: O waits until 2 H atoms are available, then fires
+ *  - h_proceed / o_proceed: gates to release exactly 2 H + 1 O per bond
+ * ================================================================== */
+
+sem_t h_sem;       /* H atoms post when ready        */
+sem_t h_proceed;   /* Gate: H waits here until bond   */
+sem_t o_proceed;   /* Gate: O waits here until bond   */
+
+void *hydrogen(void *arg) {
+    int id = *(int *)arg;
+    printf("H%d Ready\n", id);
+    sem_post(&h_sem);          /* Signal: one more H available */
+
+    sem_wait(&h_proceed);      /* Wait for bonding signal */
+    printf("H%d Bonded!\n", id);
+    return NULL;
+}
+
+void *oxygen(void *arg) {
+    int id = *(int *)arg;
+    printf("O%d Ready\n", id);
+
+    /* Wait for 2 H atoms */
+    sem_wait(&h_sem);
+    sem_wait(&h_sem);
+
+    printf("O%d Ready -> Bond Formed!\n", id);
+
+    /* Release 2 H atoms and self */
+    sem_post(&h_proceed);
+    sem_post(&h_proceed);
+    sem_post(&o_proceed);
+
+    sem_wait(&o_proceed);  /* O waits for its own release */
+    printf("O%d Bonded!\n", id);
+    return NULL;
+}
+
+/* ==================================================================
+ * MAIN
+ * ================================================================== */
+
+int main() {
+    /* ---- Part 1: Histogram ---- */
+    printf("===== PART 1: Parallel Histogram Computation =====\n");
+    init_data_array();
+
+    int expected = SUB_ARRAY_COUNT * SUB_ARRAY_DIM * SUB_ARRAY_DIM * SUB_ARRAY_DIM;
+    pthread_t threads[SUB_ARRAY_COUNT];
+    int sub_ids[SUB_ARRAY_COUNT];
+
+    for (int i = 0; i < SUB_ARRAY_COUNT; i++) {
+        sub_ids[i] = i;
+        pthread_create(&threads[i], NULL, compute_histogram, &sub_ids[i]);
+    }
+    for (int i = 0; i < SUB_ARRAY_COUNT; i++)
+        pthread_join(threads[i], NULL);
+
+    printf("Global Histogram:\n");
+    int total = 0;
+    for (int i = 0; i < RANGE; i++) {
+        printf("  [%d]: %d\n", i, global_histogram[i]);
+        total += global_histogram[i];
+    }
+    printf("Total: %d, Expected: %d -> %s\n\n", total, expected,
+           total == expected ? "VERIFIED" : "MISMATCH");
+
+    /* ---- Part 2: H2O ---- */
+    printf("===== PART 2: H2O Bond Formation =====\n");
+    sem_init(&h_sem,     0, 0);
+    sem_init(&h_proceed, 0, 0);
+    sem_init(&o_proceed, 0, 0);
+
+    /* 4 H atoms + 2 O atoms = 2 water molecules */
+    int h_ids[4] = {1, 2, 3, 4};
+    int o_ids[2] = {1, 2};
+    pthread_t h_threads[4], o_threads[2];
+
+    /* Create O threads first (they wait for H) */
+    for (int i = 0; i < 2; i++)
+        pthread_create(&o_threads[i], NULL, oxygen, &o_ids[i]);
+    usleep(10000);
+    for (int i = 0; i < 4; i++)
+        pthread_create(&h_threads[i], NULL, hydrogen, &h_ids[i]);
+
+    for (int i = 0; i < 4; i++) pthread_join(h_threads[i], NULL);
+    for (int i = 0; i < 2; i++) pthread_join(o_threads[i], NULL);
+
+    sem_destroy(&h_sem);
+    sem_destroy(&h_proceed);
+    sem_destroy(&o_proceed);
+
+    printf("All bonds formed!\n");
+    return 0;
+}
+</file>
+
+<file path="preemptive_priority.cpp">
+/*
+ * CSE4502 Operating Systems Lab: 2A
+ * Task: Preemptive Priority Scheduling Algorithm
+ * (Lower priority number = Higher priority)
+ */
+
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <iomanip>
+
+using namespace std;
+
+struct Process {
+    int pid;
+    int at;         // Arrival Time
+    int bt;         // Burst Time
+    int priority;   // Lower number = higher priority
+    int rt;         // Remaining Time
+    int ct;         // Completion Time
+    int tat;        // Turnaround Time
+    int wt;         // Waiting Time
+    bool completed;
+};
+
+void preemptivePriorityScheduling(vector<Process>& p) {
+    int n = p.size();
+    int completed = 0;
+    int currentTime = 0;
+
+    while (completed < n) {
+        // Find arrived, incomplete process with highest priority (lowest number)
+        int selected = -1;
+        int bestPriority = INT_MAX;
+
+        for (int i = 0; i < n; i++) {
+            if (!p[i].completed && p[i].at <= currentTime) {
+                if (p[i].priority < bestPriority ||
+                    (p[i].priority == bestPriority && p[i].at < p[selected].at)) {
+                    bestPriority = p[i].priority;
+                    selected = i;
+                }
+            }
+        }
+
+        if (selected == -1) {
+            currentTime++; // CPU idle
+            continue;
+        }
+
+        // Execute 1 time unit
+        p[selected].rt--;
+        currentTime++;
+
+        if (p[selected].rt == 0) {
+            p[selected].completed = true;
+            p[selected].ct  = currentTime;
+            p[selected].tat = p[selected].ct - p[selected].at;
+            p[selected].wt  = p[selected].tat - p[selected].bt;
+            completed++;
+        }
+    }
+}
+
+int main() {
+    int n;
+    cout << "Enter number of processes: ";
+    cin >> n;
+
+    vector<Process> processes(n);
+
+    for (int i = 0; i < n; i++) {
+        processes[i].pid       = i + 1;
+        processes[i].completed = false;
+        cout << "Enter Arrival Time, Burst Time, and Priority for Process "
+             << processes[i].pid << ": ";
+        cin >> processes[i].at >> processes[i].bt >> processes[i].priority;
+        processes[i].rt = processes[i].bt;
+    }
+
+    preemptivePriorityScheduling(processes);
+
+    cout << "\n" << left
+         << setw(6)  << "PID"
+         << setw(6)  << "AT"
+         << setw(6)  << "BT"
+         << setw(10) << "Priority"
+         << setw(6)  << "CT"
+         << setw(6)  << "TAT"
+         << setw(6)  << "WT"
+         << endl;
+    cout << string(46, '-') << endl;
+
+    double avgTAT = 0, avgWT = 0;
+    for (auto& p : processes) {
+        cout << left
+             << setw(6)  << p.pid
+             << setw(6)  << p.at
+             << setw(6)  << p.bt
+             << setw(10) << p.priority
+             << setw(6)  << p.ct
+             << setw(6)  << p.tat
+             << setw(6)  << p.wt
+             << endl;
+        avgTAT += p.tat;
+        avgWT  += p.wt;
+    }
+
+    cout << fixed << setprecision(2);
+    cout << "\nAverage Turnaround Time: " << avgTAT / n << endl;
+    cout << "Average Waiting Time:    " << avgWT  / n << endl;
+
+    return 0;
+}
+</file>
+
+<file path="preemptive_sjf.cpp">
+/*
+ * CSE4502 Operating Systems Lab: 1A
+ * Task: Preemptive SJF Scheduling Algorithm (SRTF - Shortest Remaining Time First)
+ */
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+#include <climits>
+
+using namespace std;
+
+struct Process {
+    int id;
+    int at;        // Arrival Time
+    int bt;        // Burst Time
+    int ct;        // Completion Time
+    int tat;       // Turnaround Time
+    int wt;        // Waiting Time
+    int remaining; // Remaining Time for preemption
+};
+
+void preemptiveSJF(vector<Process>& processes) {
+    int n = processes.size();
+    int completed = 0;
+    int currentTime = 0;
+    int totalTime = 0;
+
+    // Calculate total burst time to know when to stop
+    for (auto& p : processes) totalTime += p.bt;
+
+    while (completed < n) {
+        // Find process with shortest remaining time among arrived processes
+        int shortest = -1;
+        int minRemaining = INT_MAX;
+
+        for (int i = 0; i < n; i++) {
+            if (processes[i].at <= currentTime && processes[i].remaining > 0) {
+                if (processes[i].remaining < minRemaining ||
+                    (processes[i].remaining == minRemaining &&
+                     processes[i].at < processes[shortest].at)) {
+                    minRemaining = processes[i].remaining;
+                    shortest = i;
+                }
+            }
+        }
+
+        if (shortest == -1) {
+            // No process available, CPU idle
+            currentTime++;
+            continue;
+        }
+
+        // Execute for 1 time unit
+        processes[shortest].remaining--;
+        currentTime++;
+
+        // Check if completed
+        if (processes[shortest].remaining == 0) {
+            processes[shortest].ct  = currentTime;
+            processes[shortest].tat = processes[shortest].ct - processes[shortest].at;
+            processes[shortest].wt  = processes[shortest].tat - processes[shortest].bt;
+            completed++;
+        }
+    }
+}
+
+int main() {
+    vector<Process> processes = {
+        {1, 0, 6, 0, 0, 0, 6},
+        {2, 2, 4, 0, 0, 0, 4},
+        {3, 4, 2, 0, 0, 0, 2},
+        {4, 6, 5, 0, 0, 0, 5}
+    };
+
+    preemptiveSJF(processes);
+
+    // Print results table
+    cout << left
+         << setw(6)  << "ID"
+         << setw(6)  << "AT"
+         << setw(6)  << "BT"
+         << setw(6)  << "CT"
+         << setw(6)  << "TAT"
+         << setw(6)  << "WT"
+         << endl;
+    cout << string(36, '-') << endl;
+
+    double avgTAT = 0, avgWT = 0;
+    for (auto& p : processes) {
+        cout << left
+             << setw(6) << p.id
+             << setw(6) << p.at
+             << setw(6) << p.bt
+             << setw(6) << p.ct
+             << setw(6) << p.tat
+             << setw(6) << p.wt
+             << endl;
+        avgTAT += p.tat;
+        avgWT  += p.wt;
+    }
+
+    int n = processes.size();
+    cout << fixed << setprecision(2);
+    cout << "\nAverage Turnaround Time: " << avgTAT / n << endl;
+    cout << "Average Waiting Time:    " << avgWT  / n << endl;
+
+    return 0;
+}
+</file>
+
+<file path="priority_logging.c">
+/*
+ * CSE4502 Operating Systems Lab (Bash Scripting 1B) - Part B
+ * Multi-Level Priority-Based Concurrent Logging
+ *
+ * All P1 messages printed before P2, P2 before P3, etc.
+ * No sorting. Uses chained semaphores as barriers between priority levels.
+ *
+ * Usage: ./priority_logging <k> <n>
+ *   k = number of priority levels
+ *   n = number of threads per priority level
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define MAX_K 10
+#define MAX_N 40
+
+int K, N;
+
+/*
+ * Strategy (no counter variables, no shared state to track done threads):
+ * Use a binary semaphore per priority level as a "barrier gate".
+ * - gate[i] starts at 0 (locked).
+ * - gate[0] starts at 1 (P1 threads can go immediately).
+ * - When a P_i thread finishes printing, it signals gate[i].
+ * - Before printing, every P_i thread waits on gate[i-1], then re-signals it
+ *   for the next P_i thread (turnstile pattern).
+ * - After all P_i threads are done, the LAST P_i thread opens gate[i] (signals N times).
+ *
+ * To avoid shared counters: use a secondary semaphore per level counting completions
+ * implemented as a turnstile that only the last thread breaks open.
+ *
+ * Simpler alternative actually used here:
+ * - Each priority level i has a semaphore entry_gate[i] (turnstile).
+ * - entry_gate[0] = N (P1 threads all pass immediately).
+ * - entry_gate[i] = 0 for i > 0 (locked until P_{i-1} all done).
+ * - P_i thread: wait(entry_gate[i]), print, post(entry_gate[i]),
+ *   then for the LAST thread: post entry_gate[i+1] N times.
+ *
+ * Detecting "last thread without a counter": use a counting semaphore
+ * completion[i] initialized to N. Each P_i thread does a try-wait (sem_trywait).
+ * The thread that drains it to 0 is responsible for opening the next gate.
+ *
+ * Actually the simplest correct approach: use a mutex + counter per level,
+ * but the problem says "can you do this without a counter variable or shared state".
+ * We solve this using only semaphores in a producer-consumer chain:
+ *
+ * Use a pipeline: level 0 threads print, then post one token to level_done[0].
+ * A dedicated "relay" thread for level i waits for N tokens from level_done[i-1],
+ * then posts N tokens to entry_gate[i].
+ *
+ * This way there are NO shared integer variables to track done threads.
+ */
+
+sem_t entry_gate[MAX_K];   /* Turnstile for each priority level */
+sem_t level_done[MAX_K];   /* Each P_i thread posts here when done */
+pthread_mutex_t print_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct { int level; int id; } ThreadArg;
+
+void *log_thread(void *arg) {
+    ThreadArg *ta = (ThreadArg *)arg;
+    int level = ta->level;
+    int id    = ta->id;
+
+    /* Wait for entry gate (turnstile) */
+    sem_wait(&entry_gate[level]);
+    sem_post(&entry_gate[level]);  /* Re-open for next thread at same level */
+
+    /* Print atomically */
+    pthread_mutex_lock(&print_mutex);
+    printf("[P%d] Message %d\n", level + 1, id + 1);
+    pthread_mutex_unlock(&print_mutex);
+
+    /* Signal completion */
+    sem_post(&level_done[level]);
+
+    return NULL;
+}
+
+/* Relay thread: waits for all N completions at level i, then opens level i+1 */
+typedef struct { int level; } RelayArg;
+
+void *relay_thread(void *arg) {
+    RelayArg *ra = (RelayArg *)arg;
+    int level = ra->level;
+
+    /* Wait for all N threads at this level to finish */
+    for (int i = 0; i < N; i++)
+        sem_wait(&level_done[level]);
+
+    /* Open the gate for the NEXT level (if it exists) */
+    if (level + 1 < K) {
+        for (int i = 0; i < N; i++)
+            sem_post(&entry_gate[level + 1]);
+    }
+    return NULL;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        printf("Usage: %s <k> <n>\n", argv[0]);
+        printf("  k = number of priority levels (2-%d)\n", MAX_K);
+        printf("  n = threads per level (1-%d)\n", MAX_N);
+        return 1;
+    }
+
+    K = atoi(argv[1]);
+    N = atoi(argv[2]);
+
+    if (K < 2 || K > MAX_K || N < 1 || N > MAX_N) {
+        printf("Invalid parameters.\n");
+        return 1;
+    }
+
+    /* Initialize semaphores */
+    for (int i = 0; i < K; i++) {
+        sem_init(&level_done[i], 0, 0);
+        if (i == 0)
+            sem_init(&entry_gate[i], 0, N); /* Level 0 open immediately */
+        else
+            sem_init(&entry_gate[i], 0, 0); /* Other levels locked */
+    }
+
+    /* Create log threads */
+    pthread_t log_threads[MAX_K][MAX_N];
+    ThreadArg log_args[MAX_K][MAX_N];
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < N; j++) {
+            log_args[i][j].level = i;
+            log_args[i][j].id    = j;
+            pthread_create(&log_threads[i][j], NULL, log_thread, &log_args[i][j]);
+        }
+    }
+
+    /* Create relay threads */
+    pthread_t relays[MAX_K];
+    RelayArg relay_args[MAX_K];
+    for (int i = 0; i < K; i++) {
+        relay_args[i].level = i;
+        pthread_create(&relays[i], NULL, relay_thread, &relay_args[i]);
+    }
+
+    /* Join all */
+    for (int i = 0; i < K; i++)
+        for (int j = 0; j < N; j++)
+            pthread_join(log_threads[i][j], NULL);
+    for (int i = 0; i < K; i++)
+        pthread_join(relays[i], NULL);
+
+    /* Cleanup */
+    for (int i = 0; i < K; i++) {
+        sem_destroy(&entry_gate[i]);
+        sem_destroy(&level_done[i]);
+    }
+
+    return 0;
+}
+</file>
+
+<file path="seq_char_print.c">
+/*
+ * CSE4502 Operating Systems Lab (Bash Scripting 2B) - Part B
+ * Sequential Character Printing Using Semaphores
+ *
+ * n threads print A, B, C, ... in strict alphabetical order
+ * despite starting in arbitrary order and random delays.
+ *
+ * Usage: ./seq_print <n>   (1 <= n <= 26)
+ *
+ * Strategy:
+ *   sem[i] is initially 0. Thread i waits on sem[i], prints its character,
+ *   then signals sem[i+1]. Thread 0 starts with sem[0] = 1.
+ *   This creates a semaphore chain ensuring strict sequential output.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define MAX_N 26
+
+int N;
+sem_t sems[MAX_N + 1]; /* sems[i] controls when thread i may print */
+
+void delay_ms() {
+    unsigned int milliseconds = (rand() * 100) % 500;
+    usleep(milliseconds * 1000); /* Convert ms to microseconds */
+}
+
+typedef struct { int id; } ThreadArg;
+
+void *print_char(void *arg) {
+    ThreadArg *ta = (ThreadArg *)arg;
+    int id = ta->id;
+
+    delay_ms(); /* Random delay before printing */
+
+    sem_wait(&sems[id]);                /* Wait for our turn */
+    printf("%c ", 'A' + id);
+    fflush(stdout);
+    sem_post(&sems[id + 1]);            /* Signal next thread */
+
+    return NULL;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <n>  (1 <= n <= 26)\n", argv[0]);
+        return 1;
+    }
+
+    N = atoi(argv[1]);
+    if (N < 1 || N > MAX_N) {
+        printf("n must be between 1 and 26.\n");
+        return 1;
+    }
+
+    srand(42);
+
+    /* Initialize all semaphores to 0; only thread 0's gate is open */
+    for (int i = 0; i <= N; i++)
+        sem_init(&sems[i], 0, 0);
+    sem_post(&sems[0]); /* Thread 0 can go first */
+
+    pthread_t threads[MAX_N];
+    ThreadArg args[MAX_N];
+
+    /* Shuffle thread creation order to demonstrate ordering is independent of start */
+    int order[MAX_N];
+    for (int i = 0; i < N; i++) order[i] = i;
+    /* Simple Fisher-Yates shuffle */
+    for (int i = N - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        int tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    }
+
+    for (int i = 0; i < N; i++) {
+        args[order[i]].id = order[i];
+        pthread_create(&threads[order[i]], NULL, print_char, &args[order[i]]);
+    }
+
+    for (int i = 0; i < N; i++)
+        pthread_join(threads[i], NULL);
+
+    printf("\n");
+
+    for (int i = 0; i <= N; i++)
+        sem_destroy(&sems[i]);
+
+    return 0;
+}
+</file>
+
+<file path="task1A.sh">
+#!/bin/bash
+# Lab 3 Task 1A - Part 1: Check Even or Odd
+
+echo "=== Check Even or Odd ==="
+echo -n "Enter a number: "
+read n
+
+r=$((n % 2))
+if [ $r -eq 0 ]; then
+    echo "$n is Even"
+else
+    echo "$n is Odd"
+fi
+
+echo ""
+echo "=== Check Prime Number ==="
+echo -n "Enter a number: "
+read n
+
+if [ $n -le 1 ]; then
+    echo "$n is NOT a prime number"
+else
+    is_prime=1
+    i=2
+    half=$((n / 2))
+    while [ $i -le $half ]; do
+        r=$((n % i))
+        if [ $r -eq 0 ]; then
+            is_prime=0
+            break
+        fi
+        i=$((i + 1))
+    done
+
+    if [ $is_prime -eq 1 ]; then
+        echo "$n is a Prime number"
+    else
+        echo "$n is NOT a prime number"
+    fi
+fi
+</file>
+
+<file path="task1B.sh">
+#!/bin/bash
+# Lab 3 Task 1B - Part 1: Check Positive, Negative, or Zero
+
+echo "=== Check Positive, Negative, or Zero ==="
+echo -n "Enter a number: "
+read n
+
+if [ $n -gt 0 ]; then
+    echo "The number is positive."
+elif [ $n -lt 0 ]; then
+    echo "The number is negative."
+else
+    echo "The number is zero."
+fi
+
+echo ""
+echo "=== Sum of First N Natural Numbers ==="
+echo -n "Enter a number N: "
+read n
+
+sum=0
+i=1
+while [ $i -le $n ]; do
+    sum=$((sum + i))
+    i=$((i + 1))
+done
+
+echo "Sum of first $n natural numbers = $sum"
+</file>
+
+<file path="task2A.sh">
+#!/bin/bash
+# Lab 3 Task 2A - Part 1: Find the Largest of Three Numbers
+
+echo "=== Find the Largest of Three Numbers ==="
+echo -n "Enter first number: "
+read a
+echo -n "Enter second number: "
+read b
+echo -n "Enter third number: "
+read c
+
+if [ $a -gt $b ] && [ $a -gt $c ]; then
+    echo "The largest number is: $a"
+elif [ $b -gt $c ]; then
+    echo "The largest number is: $b"
+else
+    echo "The largest number is: $c"
+fi
+
+echo ""
+echo "=== Display Fibonacci Series ==="
+echo -n "Enter number of terms: "
+read n
+
+if [ $n -le 0 ]; then
+    echo "Please enter a positive number."
+elif [ $n -eq 1 ]; then
+    echo "Fibonacci Series: 0"
+else
+    a=0
+    b=1
+    echo -n "Fibonacci Series: $a $b"
+    count=2
+    while [ $count -lt $n ]; do
+        c=$((a + b))
+        echo -n " $c"
+        a=$b
+        b=$c
+        count=$((count + 1))
+    done
+    echo ""
+fi
+</file>
+
+<file path="task2B.sh">
+#!/bin/bash
+# Lab 3 Task 2B - Part 1: Check Whether a Year is a Leap Year
+
+echo "=== Check Leap Year ==="
+echo -n "Enter a year: "
+read y
+
+if [ $((y % 400)) -eq 0 ]; then
+    echo "$y is a Leap Year."
+elif [ $((y % 100)) -eq 0 ]; then
+    echo "$y is NOT a Leap Year."
+elif [ $((y % 4)) -eq 0 ]; then
+    echo "$y is a Leap Year."
+else
+    echo "$y is NOT a Leap Year."
+fi
+
+echo ""
+echo "=== Find the Factorial of a Number ==="
+echo -n "Enter a number: "
+read n
+
+if [ $n -lt 0 ]; then
+    echo "Factorial is not defined for negative numbers."
+else
+    fact=1
+    while [ $n -gt 0 ]; do
+        fact=$((fact * n))
+        n=$((n - 1))
+    done
+    echo "Factorial = $fact"
+fi
+</file>
+
+</files>

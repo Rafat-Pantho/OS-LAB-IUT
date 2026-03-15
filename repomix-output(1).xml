@@ -1,0 +1,2114 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+Bankers_Algorithm.c
+cpu-scheduling-simulation/CMakeLists.txt
+cpu-scheduling-simulation/include/CPU.hpp
+cpu-scheduling-simulation/include/Emulator.hpp
+cpu-scheduling-simulation/include/Process.hpp
+cpu-scheduling-simulation/include/RAM.hpp
+cpu-scheduling-simulation/include/Scheduler.hpp
+cpu-scheduling-simulation/main.cpp
+cpu-scheduling-simulation/README.md
+cpu-scheduling-simulation/run.sh
+cpu-scheduling-simulation/src/CPU.cpp
+cpu-scheduling-simulation/src/Emulator.cpp
+cpu-scheduling-simulation/src/Process.cpp
+cpu-scheduling-simulation/src/RAM.cpp
+cpu-scheduling-simulation/src/Scheduler.cpp
+Deadlock.c
+diningPhilosopher.c
+fileType.sh
+forkFunc.c
+forkFunc2.c
+h20bond.c
+histogram.c
+hotSwappableConfiguration.c
+mainThreads.c
+multiAccountTransferSystem.c
+navigationLaunch.c
+orderedSystem.c
+output/diningPhilosopher
+output/forkFunc
+output/forkFunc2
+output/h20bond
+output/histogram
+output/hotSwappableConfiguration
+output/mainThreads
+output/navigationLaunch
+output/orderedSystem
+output/priorityLogging
+output/processID
+output/raceCondition
+output/raceConditionUsingMutex
+output/readerWriterSynchronization
+output/simpleRoutine
+output/transactionServer
+priorityLogging.c
+processID.c
+raceCondition.c
+raceConditionUsingMutex.c
+raceConditionUsingSemaphore.c
+readerWriterSynchronization.c
+simpleRoutine.c
+transactionServer.c
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="Bankers_Algorithm.c">
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+#define N 5 // Number of Processes
+#define M 3 // Number of Resource Types
+
+typedef struct {
+    int allocation[N][M];
+    int max[N][M];
+    int available[M];
+    int need[N][M];
+} SystemState;
+
+int count = 0;
+int* isSafe(SystemState *state) {
+
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < M; j++) {
+            state->need[i][j] = state->max[i][j] - state->allocation[i][j];
+        }
+    }
+    bool finish[N] = {false};
+
+    int work[M];
+    for (int j = 0; j < M; j++) {
+        work[j] = state->available[j];
+    }
+
+    int *safeSeq = (int*)malloc(sizeof(int) * N);
+    count = 0;
+
+    while (count < N) {
+        bool found = false;
+
+        for (int i = 0; i < N; i++) {
+
+            if (!finish[i]) {
+
+                bool possible = true;
+                for (int j = 0; j < M; j++) {
+                    if (state->need[i][j] > work[j]) {
+                        possible = false;
+                        break;
+                    }
+                }
+                if (possible) {
+                    for (int j = 0; j < M; j++) {
+                        work[j] += state->allocation[i][j];
+                    }
+
+                    safeSeq[count++] = i;
+                    finish[i] = true;
+                    found = true;
+                }
+            }
+        }
+
+        if (!found)
+            break;
+    }
+
+    return safeSeq;
+}
+
+int main() {
+    SystemState state = {
+        .allocation = {
+            {0, 1, 0},
+            {2, 0, 0},
+            {3, 0, 2},
+            {2, 1, 1},
+            {0, 0, 2}
+        },
+        .max = {
+            {7, 5, 3},
+            {3, 2, 2},
+            {9, 0, 2},
+            {2, 2, 2},
+            {4, 3, 3}
+        },
+
+        .available = {3, 3, 2}   
+    };
+
+    int *safeSeq = isSafe(&state);
+
+    if (count == N) {
+        printf("System is SAFE.\nSequence: ");
+        for (int i = 0; i < N; i++)
+            printf("P%d ", safeSeq[i]);
+        printf("\n");
+    } else {
+        printf("System is UNSAFE.\nSequence (partial): ");
+        for (int i = 0; i < count; i++)
+            printf("P%d ", safeSeq[i]);
+        printf("\n");
+    }
+
+    free(safeSeq);
+    return 0;
+}
+</file>
+
+<file path="cpu-scheduling-simulation/CMakeLists.txt">
+cmake_minimum_required(VERSION 3.10)
+project(vibe-cpu)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+include_directories(include)
+
+file(GLOB SOURCES "src/*.cpp")
+file(GLOB HEADERS "include/*.hpp")
+
+add_executable(vibe-cpu main.cpp ${SOURCES})
+</file>
+
+<file path="cpu-scheduling-simulation/include/CPU.hpp">
+#ifndef CPU_HPP
+#define CPU_HPP
+
+#include "Process.hpp"
+
+class CPU {
+public:
+    CPU();
+    
+    // Executes one tick of the current process
+    // Returns true if a process was running, false if idle
+    bool execute();
+    
+    // Assigns a process to the CPU
+    void setProcess(Process* process);
+    
+    Process* getCurrentProcess() const;
+    bool isIdle() const;
+
+private:
+    Process* currentProcess;
+};
+
+#endif // CPU_HPP
+</file>
+
+<file path="cpu-scheduling-simulation/include/Emulator.hpp">
+#ifndef EMULATOR_HPP
+#define EMULATOR_HPP
+
+#include "CPU.hpp"
+#include "RAM.hpp"
+#include "Scheduler.hpp"
+#include <vector>
+#include <utility>
+#include <string>
+
+class Emulator {
+public:
+    Emulator(Scheduler* scheduler);
+
+    void loadProcess(const Process& process);
+    
+    // Runs the emulation until completion
+    void run();
+
+    // Prints the Gantt Chart
+    void printGanttChart() const;
+
+private:
+    CPU cpu;
+    RAM ram;
+    Scheduler* scheduler;
+    int curTick;
+
+    // To store history: [StartTime, ProcessID]
+    // Or [Tick, ProcessID]
+    std::vector<std::pair<int, int>> history; // Tick -> Process ID. -1 for Idle.
+};
+
+#endif // EMULATOR_HPP
+</file>
+
+<file path="cpu-scheduling-simulation/include/Process.hpp">
+#ifndef PROCESS_HPP
+#define PROCESS_HPP
+
+#include <vector>
+#include <string>
+
+// Simulates a single instruction
+struct Instruction {
+    int duration; // Duration in ticks 
+    // In a real CPU, this would be an opcode, operands, etc.
+    // For this simplified version, duration is the main property.
+    
+    Instruction(int d = 1) : duration(d) {}
+};
+
+enum class ProcessState {
+    CREATED,
+    READY,
+    RUNNING,
+    BLOCKED,
+    TERMINATED
+};
+
+class Process {
+public:
+    Process(int id, int arrivalTime, int priority, const std::vector<Instruction>& instructions);
+
+    int getId() const;
+    int getArrivalTime() const;
+    int getPriority() const;
+    
+    ProcessState getState() const;
+    void setState(ProcessState state);
+
+    // Returns true if there are more instructions to execute
+    bool hasNextInstruction() const;
+
+    // Returns the current instruction without advancing
+    const Instruction& peekInstruction() const;
+
+    // Advances the program counter (simulates instruction completion)
+    void advanceMock();
+
+    // Returns the Program Counter
+    size_t getProgramCounter() const;
+
+    // Returns the total number of instructions
+    size_t getTotalInstructions() const;
+
+private:
+    int id;
+    int arrivalTime;
+    int priority;
+    std::vector<Instruction> instructions;
+    size_t programCounter;
+    ProcessState state;
+};
+
+#endif // PROCESS_HPP
+</file>
+
+<file path="cpu-scheduling-simulation/include/RAM.hpp">
+#ifndef RAM_HPP
+#define RAM_HPP
+
+#include "Process.hpp"
+#include <list>
+#include <map>
+
+// Represents the system memory, holding all processes
+class RAM {
+public:
+    void addProcess(const Process& process);
+    Process* getProcess(int id);
+    std::vector<Process*> getAllProcesses();
+
+private:
+    std::list<Process> processes; // Using list for pointer stability
+};
+
+#endif // RAM_HPP
+</file>
+
+<file path="cpu-scheduling-simulation/include/Scheduler.hpp">
+#ifndef SCHEDULER_HPP
+#define SCHEDULER_HPP
+
+#include "Process.hpp"
+#include <vector>
+#include <queue>
+
+// Base Scheduler class
+class Scheduler {
+public:
+    virtual ~Scheduler() = default;
+
+    // Adds a process to the ready queue (or similar structure)
+    virtual void addProcess(Process* process) = 0;
+
+    // Decides next process to run. Returns nullptr if no process is ready.
+    virtual Process* nextProcess() = 0;
+};
+
+// These classes are to be implemented by the students
+
+class FCFSScheduler : public Scheduler {
+public:
+    void addProcess(Process* process) override;
+    Process* nextProcess() override;
+
+private:
+    std::queue<Process*> readyQueue;
+};
+
+class SJFScheduler : public Scheduler {
+public:
+    void addProcess(Process* process) override;
+    Process* nextProcess() override;
+
+private:
+    std::vector<Process*> readyList;
+    Process* currentProcess = nullptr;
+};
+
+class PreemptiveSJFScheduler : public Scheduler {
+public:
+    void addProcess(Process* process) override;
+    Process* nextProcess() override;
+
+private:
+    std::vector<Process*> readyList;
+};
+
+class PriorityScheduler : public Scheduler {
+public:
+    void addProcess(Process* process) override;
+    Process* nextProcess() override;
+
+private:
+    std::vector<Process*> readyList;
+    Process* currentProcess = nullptr;
+};
+
+class RRScheduler : public Scheduler {
+public:
+    void addProcess(Process* process) override;
+    Process* nextProcess() override;
+
+private:
+    int quanta = 2;
+    int currentQuantumUsed = 0;
+    std::queue<Process*> readyQueue;
+    Process* currentProcess = nullptr;
+};
+
+#endif // SCHEDULER_HPP
+</file>
+
+<file path="cpu-scheduling-simulation/main.cpp">
+#include <iostream>
+#include <vector>
+#include <string>
+#include <memory>
+#include "Process.hpp"
+#include "Scheduler.hpp"
+#include "Emulator.hpp"
+
+struct ProcessInput {
+    int id;
+    int arrivalTime;
+    int burstTime;
+    int priority;
+};
+
+void runSimulation(Scheduler* sched, const std::string& name, const std::vector<ProcessInput>& inputs) {
+    std::cout << "------------------------------------------" << std::endl;
+    std::cout << "Scheduler: " << name << std::endl;
+    std::cout << "------------------------------------------" << std::endl;
+
+    Emulator emulator(sched);
+
+    for (const auto& input : inputs) {
+        std::vector<Instruction> instructions;
+        for (int j = 0; j < input.burstTime; ++j) {
+            instructions.emplace_back(1); // Standard duration 1 tick
+        }
+        
+        Process p(input.id, input.arrivalTime, input.priority, instructions);
+        emulator.loadProcess(p);
+    }
+
+    emulator.run();
+    emulator.printGanttChart();
+    std::cout << std::endl;
+}
+
+int main() {
+    std::cout << "Vibe CPU Emulator" << std::endl;
+
+    int numProcesses;
+    std::cout << "Enter number of processes: ";
+    if (!(std::cin >> numProcesses)) return 1;
+
+    std::vector<ProcessInput> inputs;
+    for (int i = 0; i < numProcesses; ++i) {
+        int arrivalTime, burstTime, priority;
+        std::cout << "Process " << (i + 1) << " Arrival Time | Burst Time | Priority: ";
+        std::cin >> arrivalTime >> burstTime >> priority;
+        inputs.push_back({i + 1, arrivalTime, burstTime, priority});
+    }
+
+    // FCFS
+    FCFSScheduler fcfs;
+    runSimulation(&fcfs, "FCFS", inputs);
+
+    // SJF
+    SJFScheduler sjf;
+    runSimulation(&sjf, "SJF", inputs);
+
+    // Preemptive SJF
+    PreemptiveSJFScheduler psjf;
+    runSimulation(&psjf, "Preemptive SJF", inputs);
+
+    // Priority
+    PriorityScheduler prioritySched;
+    runSimulation(&prioritySched, "Priority", inputs);
+
+    // RR
+    RRScheduler rr;
+    runSimulation(&rr, "Round Robin", inputs);
+
+    return 0;
+}
+</file>
+
+<file path="cpu-scheduling-simulation/README.md">
+# CPU Scheduling Simulation
+A barebones scheduling algorithm simulation made using Google's AntiGravity IDE.
+</file>
+
+<file path="cpu-scheduling-simulation/run.sh">
+#!/bin/bash
+
+# Clean previous build artifacts
+echo "Cleaning previous build..."
+rm -f vibe-cpu
+rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake Makefile
+
+# Compile
+echo "Compiling..."
+g++ -o vibe-cpu main.cpp src/*.cpp -I include
+
+# Check if compilation succeeded
+if [ $? -eq 0 ]; then
+    echo "Compilation successful. Running..."
+    ./vibe-cpu
+else
+    echo "Compilation failed."
+fi
+</file>
+
+<file path="cpu-scheduling-simulation/src/CPU.cpp">
+#include "CPU.hpp"
+#include <iostream>
+
+CPU::CPU() : currentProcess(nullptr) {}
+
+bool CPU::execute() {
+    if (currentProcess == nullptr) {
+        return false;
+    }
+
+    if (currentProcess->getState() != ProcessState::TERMINATED) {
+        // In a real CPU, we would decrement the instruction duration or similar
+        // Here, we just assume 1 instruction = 1 tick as requested
+        // "I just want a cpu which processes 1 instruction in 1 tick"
+        
+        if (currentProcess->hasNextInstruction()) {
+            currentProcess->advanceMock();
+            
+            // Check if process is finished after this instruction
+            if (!currentProcess->hasNextInstruction()) {
+                currentProcess->setState(ProcessState::TERMINATED);
+            }
+            return true;
+        } else {
+             currentProcess->setState(ProcessState::TERMINATED);
+        }
+    }
+    
+    return false;
+}
+
+void CPU::setProcess(Process* process) {
+    currentProcess = process;
+    if (currentProcess && currentProcess->getState() == ProcessState::READY) {
+        currentProcess->setState(ProcessState::RUNNING);
+    }
+}
+
+Process* CPU::getCurrentProcess() const {
+    return currentProcess;
+}
+
+bool CPU::isIdle() const {
+    return currentProcess == nullptr || currentProcess->getState() == ProcessState::TERMINATED;
+}
+</file>
+
+<file path="cpu-scheduling-simulation/src/Emulator.cpp">
+#include "Emulator.hpp"
+#include <iostream>
+#include <iomanip>
+
+Emulator::Emulator(Scheduler* sched) : scheduler(sched), curTick(0) {}
+
+void Emulator::loadProcess(const Process& process) {
+    ram.addProcess(process);
+}
+
+void Emulator::run() {
+    std::cout << "Starting Emulation..." << std::endl;
+    
+    bool running = true;
+    while (running) {
+        // Check for new arrivals
+        for (auto* p : ram.getAllProcesses()) {
+            if (p->getState() == ProcessState::CREATED && p->getArrivalTime() <= curTick) {
+                scheduler->addProcess(p);
+                // Scheduler usually sets it to READY
+            }
+        }
+
+        // Scheduler decides
+        Process* next = scheduler->nextProcess();
+        
+        cpu.setProcess(next);
+        
+        // Execute CPU
+        bool busy = cpu.execute();
+        
+        // Record history
+        if (busy && cpu.getCurrentProcess()) {
+            history.push_back({curTick, cpu.getCurrentProcess()->getId()});
+        } else {
+            history.push_back({curTick, -1}); // -1 for IDLE
+        }
+        
+        curTick++;
+
+        // Stop condition:
+        // If CPU is idle AND scheduler has no more processes
+        bool allTerminated = true;
+        for (auto* p : ram.getAllProcesses()) {
+            if (p->getState() != ProcessState::TERMINATED) {
+                allTerminated = false;
+                break;
+            }
+        }
+        if (allTerminated) {
+            running = false;
+        }
+    }
+    std::cout << "Emulation Finished at tick " << curTick << "." << std::endl;
+}
+
+void Emulator::printGanttChart() const {
+    std::cout << "\n=== Gantt Chart ===\n";
+    if (history.empty()) return;
+
+    // 1. Compress history into segments
+    struct Segment {
+        int processId;
+        int startTime;
+        int endTime;
+    };
+    std::vector<Segment> segments;
+
+    if (!history.empty()) {
+        int currentId = history[0].second;
+        int startTime = history[0].first;
+        
+        for (size_t i = 1; i < history.size(); ++i) {
+            if (history[i].second != currentId) {
+                segments.push_back({currentId, startTime, history[i].first});
+                currentId = history[i].second;
+                startTime = history[i].first;
+            }
+        }
+        segments.push_back({currentId, startTime, history.back().first + 1});
+    }
+
+    // Determine width for each segment
+    int totalTime = segments.back().endTime;
+    bool proportional = (totalTime <= 100);
+
+    // Calculate segment widths
+    std::vector<int> segmentWidths;
+    for (const auto& seg : segments) {
+        int duration = seg.endTime - seg.startTime;
+        int width = proportional ? duration * 2 : 6;
+        if (width < 6) width = 6;
+        
+        // Make sure width is enough for the label "P12"
+        std::string label = (seg.processId == -1) ? "IDLE" : "P" + std::to_string(seg.processId);
+        if (width < label.length() + 2) width = label.length() + 2;
+
+        segmentWidths.push_back(width);
+    }
+
+    // Print Top Border
+    std::cout << "+";
+    for (int w : segmentWidths) {
+        for (int k = 0; k < w; ++k) std::cout << "-";
+        std::cout << "+";
+    }
+    std::cout << "\n";
+
+    // Print Content
+    std::cout << "|";
+    for (size_t i = 0; i < segments.size(); ++i) {
+        const auto& seg = segments[i];
+        int width = segmentWidths[i];
+        std::string label = (seg.processId == -1) ? "IDLE" : "P" + std::to_string(seg.processId);
+        
+        int padding = width - label.length();
+        int leftPad = padding / 2;
+        int rightPad = padding - leftPad;
+        
+        for(int k=0; k<leftPad; ++k) std::cout << " ";
+        std::cout << label;
+        for(int k=0; k<rightPad; ++k) std::cout << " ";
+        std::cout << "|";
+    }
+    std::cout << "\n";
+
+    // Print Bottom Border
+    std::cout << "+";
+    for (int w : segmentWidths) {
+        for (int k = 0; k < w; ++k) std::cout << "-";
+        std::cout << "+";
+    }
+    std::cout << "\n";
+
+    // Print Numbers
+    std::cout << segments[0].startTime;
+    int currentPos = std::to_string(segments[0].startTime).length();
+
+    for (size_t i = 0; i < segments.size(); ++i) {
+        int width = segmentWidths[i];
+        // The end of this segment is at a distance of (width + 1) ticks from the start of this segment visual
+        // The '+' is 1 char. 
+        // We want to align the next number under the '+' at the end of this block.
+        
+        std::string nextNum = std::to_string(segments[i].endTime);
+        
+        // Total chars to print to reach the right alignment:
+        // We printed the previous number. We are at `currentPos`.
+        // We want to be at a position relative to the start of the line.
+        // Let's track expected visual position.
+    }
+    // Actually, simple padding loop is easier.
+    // Re-print the loop for numbers with explicit spacing
+    std::cout << "\r"; // Clear line if needed, or just new line
+    
+    // Easier way: Build the line string buffer
+    std::string timeline = std::to_string(segments[0].startTime);
+    for (size_t i = 0; i < segments.size(); ++i) {
+        int width = segmentWidths[i];
+        std::string nextStr = std::to_string(segments[i].endTime);
+        
+        // We need to add spaces until the length of timeline is equal to the position of the corresponding '+' 
+        // Logic:
+        // Start of bar i is at: i (implicit)
+        // End of bar i (and start of i+1) is at accumulated width + (i+1)
+        
+        int targetLen = 0;
+        for(size_t j=0; j<=i; ++j) targetLen += segmentWidths[j] + 1;
+        // targetLen is the position of the '+' closing this segment. 
+        // We want to center the number? No, usually left aligned to the tick mark.
+        // The tick mark is the '+' character.
+        // Position of '+' #1 (start) is 0.
+        // Position of '+' #2 (end of seg 0) is width[0] + 1.
+        
+        // timeline currently has "0". Len = 1.
+        // We want next number at width[0] + 1.
+        // So we append spaces until len is width[0] + 1 - nextStr.length()/2 ?
+        // Standard is left-aligned to the vertical bar.
+        
+        int targetPos = 0;
+        for(size_t k=0; k<=i; ++k) targetPos += segmentWidths[k] + 1;
+        
+        int spacesNeeded = targetPos - timeline.length();
+        // Since we want the number to *start* somewhat aligned, or centered? 
+        // Usually aligned left if it fits, or centered.
+        // If we strictly align left to the '+', we might overlap if segments are tiny.
+        // But we ensured min width 6. 
+        // "0" (len 1). target (say 7). spaces = 6. 
+        // timeline becomes "0      ". Then append "5". "0      5".
+        
+        // Adjust for length of number to center it?
+        // Let's just align left to the '+'.
+        int correction = nextStr.length() / 2; // Rough center
+        // Remove correction to center under '+'?
+        // targetPos is the index of '+'.
+        // We want center of number to be at targetPos?
+        // Or start of number at targetPos?
+        // If start at targetPos:
+        if (spacesNeeded > 0) {
+            timeline += std::string(spacesNeeded, ' ');
+        }
+        timeline += nextStr;
+    }
+    std::cout << timeline << "\n";
+
+    std::cout << "===================\n";
+}
+</file>
+
+<file path="cpu-scheduling-simulation/src/Process.cpp">
+#include "Process.hpp"
+#include <stdexcept>
+
+Process::Process(int id, int arrivalTime, int priority, const std::vector<Instruction>& instructions)
+    : id(id), arrivalTime(arrivalTime), priority(priority), instructions(instructions), programCounter(0), state(ProcessState::CREATED) {}
+
+int Process::getId() const {
+    return id;
+}
+
+int Process::getArrivalTime() const {
+    return arrivalTime;
+}
+
+int Process::getPriority() const {
+    return priority;
+}
+
+ProcessState Process::getState() const {
+    return state;
+}
+
+void Process::setState(ProcessState s) {
+    state = s;
+}
+
+bool Process::hasNextInstruction() const {
+    return programCounter < instructions.size();
+}
+
+const Instruction& Process::peekInstruction() const {
+    if (!hasNextInstruction()) {
+        throw std::out_of_range("No more instructions in process");
+    }
+    return instructions[programCounter];
+}
+
+void Process::advanceMock() {
+    if (hasNextInstruction()) {
+        programCounter++;
+    }
+}
+
+size_t Process::getProgramCounter() const {
+    return programCounter;
+}
+
+size_t Process::getTotalInstructions() const {
+    return instructions.size();
+}
+</file>
+
+<file path="cpu-scheduling-simulation/src/RAM.cpp">
+#include "RAM.hpp"
+
+void RAM::addProcess(const Process& process) {
+    processes.push_back(process);
+}
+
+Process* RAM::getProcess(int id) {
+    for (auto& p : processes) {
+        if (p.getId() == id) {
+            return &p;
+        }
+    }
+    return nullptr;
+}
+
+std::vector<Process*> RAM::getAllProcesses() {
+    std::vector<Process*> ptrs;
+    for (auto& p : processes) {
+        ptrs.push_back(&p);
+    }
+    return ptrs;
+}
+</file>
+
+<file path="cpu-scheduling-simulation/src/Scheduler.cpp">
+#include "Scheduler.hpp"
+#include <algorithm>
+
+// FCFS Implementation
+void FCFSScheduler::addProcess(Process* process) {
+    // Ideally check if process is state READY before adding
+    process->setState(ProcessState::READY);
+    readyQueue.push(process);
+}
+
+Process* FCFSScheduler::nextProcess() {
+    if (readyQueue.empty()) {
+        return nullptr;
+    }
+    
+    while (!readyQueue.empty() && readyQueue.front()->getState() == ProcessState::TERMINATED) {
+        readyQueue.pop();
+    }
+    
+    if (readyQueue.empty()) {
+        return nullptr;
+    }
+
+    Process* p = readyQueue.front();
+    
+    return p;
+}
+
+void SJFScheduler::addProcess(Process* process) {
+    process->setState(ProcessState::READY);
+    readyList.push_back(process);
+}
+
+Process* SJFScheduler::nextProcess() {
+    if (currentProcess &&
+        currentProcess->getState() != ProcessState::TERMINATED) {
+        return currentProcess;
+    }
+
+    Process* shortest = nullptr;
+
+    for (auto* p : readyList) {
+        if (p->getState() == ProcessState::TERMINATED)
+            continue;
+
+        if (!shortest ||
+            (p->getTotalInstructions() - p->getProgramCounter()) <
+            (shortest->getTotalInstructions() - shortest->getProgramCounter())) {
+            shortest = p;
+        }
+    }
+
+    currentProcess = shortest;
+    return currentProcess;
+}
+
+void PreemptiveSJFScheduler::addProcess(Process* process) {
+    process->setState(ProcessState::READY);
+    readyList.push_back(process);
+}
+
+Process* PreemptiveSJFScheduler::nextProcess() {
+    Process* shortest = nullptr;
+
+    for (auto* p : readyList) {
+        if (p->getState() == ProcessState::TERMINATED)
+            continue;
+
+        if (!shortest ||
+            (p->getTotalInstructions() - p->getProgramCounter()) <
+            (shortest->getTotalInstructions() - shortest->getProgramCounter())) {
+            shortest = p;
+        }
+    }
+
+    return shortest;
+}
+
+void PriorityScheduler::addProcess(Process* process) {
+    process->setState(ProcessState::READY);
+    readyList.push_back(process);
+}
+
+Process* PriorityScheduler::nextProcess() {
+    if (currentProcess &&
+        currentProcess->getState() != ProcessState::TERMINATED) {
+        return currentProcess;
+    }
+
+    Process* highestPriority = nullptr;
+
+    for (auto* p : readyList) {
+        if (p->getState() == ProcessState::TERMINATED)
+            continue;
+
+        if (!highestPriority ||
+            p->getPriority() < highestPriority->getPriority()) {
+            highestPriority = p;
+        }
+    }
+
+    currentProcess = highestPriority;
+    return currentProcess;
+}
+
+void RRScheduler::addProcess(Process* process) {
+    process->setState(ProcessState::READY);
+    readyQueue.push(process);
+}
+
+Process* RRScheduler::nextProcess() {
+    if (currentProcess &&
+        currentProcess->getState() != ProcessState::TERMINATED &&
+        currentQuantumUsed < quanta) {
+        currentQuantumUsed++;
+        return currentProcess;
+    }
+
+    if (currentProcess &&
+        currentProcess->getState() != ProcessState::TERMINATED) {
+        readyQueue.push(currentProcess);
+    }
+
+    currentQuantumUsed = 0;
+
+    while (!readyQueue.empty() &&
+           readyQueue.front()->getState() == ProcessState::TERMINATED) {
+        readyQueue.pop();
+    }
+
+    if (readyQueue.empty()) {
+        currentProcess = nullptr;
+        return nullptr;
+    }
+
+    currentProcess = readyQueue.front();
+    readyQueue.pop();
+    currentQuantumUsed = 1;
+
+    return currentProcess;
+}
+</file>
+
+<file path="Deadlock.c">
+#include <pthread.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+#define THREAD_COUNT 5
+
+pthread_mutex_t locks[THREAD_COUNT];
+
+void* worker(void* arg) {
+
+    int idx = *(int *)arg;
+    int next_idx = (idx + 1) % THREAD_COUNT;
+    free(arg);
+
+    if (idx == THREAD_COUNT - 1) {
+        printf("Thread %d: Locking %d\n", idx, next_idx);
+        pthread_mutex_lock(&locks[next_idx]);
+        sleep(1);
+
+        printf("Thread %d: Trying to lock %d\n", idx, idx);
+        pthread_mutex_lock(&locks[idx]);
+    }
+    else {
+        printf("Thread %d: Locking %d\n", idx, idx);
+        pthread_mutex_lock(&locks[idx]);
+        sleep(1);
+
+        printf("Thread %d: Trying to lock %d\n", idx, next_idx);
+        pthread_mutex_lock(&locks[next_idx]);
+    }
+
+    printf("Thread %d: Acquired both locks\n", idx);
+
+    pthread_mutex_unlock(&locks[idx]);
+    pthread_mutex_unlock(&locks[next_idx]);
+
+    return NULL;
+}
+
+int main() {
+
+    pthread_t threads[THREAD_COUNT];
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_mutex_init(&locks[i], NULL);
+    }
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        int *idx = (int *)malloc(sizeof(int));
+        *idx = i;
+        pthread_create(&threads[i], NULL, worker, idx);
+    }
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_mutex_destroy(&locks[i]);
+    }
+
+    printf("Program finished without deadlock.\n");
+
+    return 0;
+}
+</file>
+
+<file path="diningPhilosopher.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define N 5
+
+// One counting semaphore for room capacity
+sem_t room;
+
+// One semaphore per fork
+sem_t forks[N];
+
+void* philosopher(void* arg) {
+    int id = *(int*)arg;
+    int left = id;
+    int right = (id + 1) % N;
+
+    while (1) {
+        printf("Philosopher %d is thinking\n", id);
+        sleep(1);
+
+        // Enter the room (max 4 philosophers)
+        sem_wait(&room);
+
+        // Pick up forks
+        sem_wait(&forks[left]);
+        sem_wait(&forks[right]);
+
+        printf("Philosopher %d is eating\n", id);
+        sleep(2);
+
+        // Put down forks
+        sem_post(&forks[right]);
+        sem_post(&forks[left]);
+
+        // Leave the room
+        sem_post(&room);
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t phil[N];
+    int id[N];
+
+    // Initialize room semaphore to 4
+    sem_init(&room, 0, 4);
+
+    // Initialize forks
+    for (int i = 0; i < N; i++) {
+        sem_init(&forks[i], 0, 1);
+        id[i] = i;
+    }
+
+    // Create philosopher threads
+    for (int i = 0; i < N; i++) {
+        pthread_create(&phil[i], NULL, philosopher, &id[i]);
+    }
+
+    // Join threads (never ends)
+    for (int i = 0; i < N; i++) {
+        pthread_join(phil[i], NULL);
+    }
+
+    return 0;
+}
+</file>
+
+<file path="fileType.sh">
+#!/bin/bash
+
+# Check if filename argument is provided
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <filename>"
+    exit 1
+fi
+
+filename="$1"
+
+# Extract extension
+extension="${filename##*.}"
+
+# Determine file type using case
+case "$extension" in
+    txt)
+        echo "Text file"
+        ;;
+    c)
+        echo "C source file"
+        ;;
+    cpp)
+        echo "C++ source file"
+        ;;
+    py)
+        echo "Python script"
+        ;;
+    sh)
+        echo "Bash script"
+        ;;
+    java)
+        echo "Java source file"
+        ;;
+    html|htm)
+        echo "HTML file"
+        ;;
+    jpg|jpeg|png)
+        echo "Image file"
+        ;;
+    pdf)
+        echo "PDF document"
+        ;;
+    *)
+        echo "Unknown or unsupported file type"
+        ;;
+esac
+</file>
+
+<file path="forkFunc.c">
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h> // linux specific header for fork()
+
+int main(int argc, char* argv[]) {
+    int id = fork();
+    printf("Hello World from id: %d\n", id);
+    if (id == 0) {
+        printf("Hello from child process\n");
+    } else {
+        printf("Hello from main process\n");
+    }
+    return 0;
+}
+</file>
+
+<file path="forkFunc2.c">
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h> // linux specific header for fork()
+
+int main(int argc, char* argv[]) {
+    int id = fork();
+    int n;
+    if (id == 0) {
+        n = 1;
+    } else {
+        n = 6;
+    }
+    if (id != 0) {
+        // wait();
+    }
+    int i;
+    for (i = n; i < n + 5; i++) {
+        printf("Process ID: %d, i = %d\n", getpid(), i);
+        fflush(stdout);
+    }
+    printf("\n");
+
+    return 0;
+}
+</file>
+
+<file path="h20bond.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+sem_t hReady;
+sem_t hQueue;
+sem_t oQueue;
+sem_t barrier;
+
+void* hydrogen(void* arg) {
+    printf("H Ready\n");
+
+    // Signal availability
+    sem_post(&hReady);
+
+    // Wait until selected for bonding
+    sem_wait(&hQueue);
+
+    // Barrier: wait for other atoms
+    sem_wait(&barrier);
+
+    printf("H Bonded\n");
+    return NULL;
+}
+
+void* oxygen(void* arg) {
+    printf("O Ready\n");
+
+    // Wait for two hydrogen atoms
+    sem_wait(&hReady);
+    sem_wait(&hReady);
+
+    // Release exactly two hydrogens
+    sem_post(&hQueue);
+    sem_post(&hQueue);
+
+    // Barrier release: 3 atoms total
+    sem_post(&barrier);
+    sem_post(&barrier);
+    sem_post(&barrier);
+
+    printf("Bond Formed!\n");
+    return NULL;
+}
+
+int main() {
+    pthread_t h[4], o[2];
+
+    sem_init(&hReady, 0, 0);
+    sem_init(&hQueue, 0, 0);
+    sem_init(&oQueue, 0, 0);
+    sem_init(&barrier, 0, 0);
+
+    // Create Hydrogen threads
+    for (int i = 0; i < 4; i++) {
+        pthread_create(&h[i], NULL, hydrogen, NULL);
+        sleep(1);
+    }
+
+    // Create Oxygen threads
+    for (int i = 0; i < 2; i++) {
+        pthread_create(&o[i], NULL, oxygen, NULL);
+        sleep(2);
+    }
+
+    for (int i = 0; i < 4; i++)
+        pthread_join(h[i], NULL);
+
+    for (int i = 0; i < 2; i++)
+        pthread_join(o[i], NULL);
+
+    return 0;
+}
+</file>
+
+<file path="histogram.c">
+#include <stdio.h>
+#include <pthread.h>
+
+#define HIST_SIZE 10
+#define N 9
+#define THREADS 2
+
+int input[N] = {1, 3, 2, 5, 3, 7, 8, 3, 1};
+int histogram[HIST_SIZE] = {0};
+
+pthread_mutex_t mutex;
+
+// Structure to pass range info to threads
+typedef struct {
+    int start;
+    int end;
+} ThreadData;
+
+void* compute_histogram(void* arg) {
+    ThreadData* data = (ThreadData*)arg;
+    int local_hist[HIST_SIZE] = {0};
+
+    // Step 1: Compute local histogram
+    for (int i = data->start; i <= data->end; i++) {
+        int val = input[i];
+        local_hist[val]++;
+    }
+
+    // Step 2: Merge into global histogram (critical section)
+    pthread_mutex_lock(&mutex);
+    for (int i = 0; i < HIST_SIZE; i++) {
+        histogram[i] += local_hist[i];
+    }
+    pthread_mutex_unlock(&mutex);
+
+    return NULL;
+}
+
+int main() {
+    pthread_t threads[THREADS];
+    ThreadData ranges[THREADS];
+
+    pthread_mutex_init(&mutex, NULL);
+
+    // Compute ranges: split N elements as evenly as possible across THREADS
+    int base = N / THREADS;  // minimum chunk size
+    int extra = N % THREADS; // first 'extra' threads handle one more element
+    int cursor = 0;
+    for (int i = 0; i < THREADS; i++) {
+        int count = base + (i < extra ? 1 : 0);
+        ranges[i].start = cursor;
+        ranges[i].end = cursor + count - 1; // inclusive end
+        cursor += count;
+    }
+
+    // Create threads
+    for (int i = 0; i < THREADS; i++) {
+        pthread_create(&threads[i], NULL, compute_histogram, &ranges[i]);
+    }
+
+    // Join threads
+    for (int i = 0; i < THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex);
+
+    // Print histogram
+    int sum = 0;
+    printf("Final Histogram:\n");
+    for (int i = 0; i < HIST_SIZE; i++) {
+        printf("histogram[%d] = %d\n", i, histogram[i]);
+        sum += histogram[i];
+    }
+
+    printf("Sum of histogram values = %d\n", sum);
+    return 0;
+}
+</file>
+
+<file path="hotSwappableConfiguration.c">
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+
+// Global configuration pointer
+int* active_config = NULL;
+
+// Single mutex (only one allowed)
+pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Reader thread */
+void* reader(void* arg) {
+    int id = *(int*)arg;
+
+    while (1) {
+        pthread_mutex_lock(&config_mutex);
+
+        // Guaranteed safe access
+        if (active_config != NULL) {
+            printf("Reader %d reads config value: %d\n",
+                   id, *active_config);
+        }
+
+        pthread_mutex_unlock(&config_mutex);
+
+        sleep(1);
+    }
+    return NULL;
+}
+
+/* Updater thread */
+void* updater(void* arg) {
+    int value = 100;
+
+    while (1) {
+        pthread_mutex_lock(&config_mutex);
+
+        // Free old configuration
+        free(active_config);
+
+        // Allocate new configuration
+        active_config = malloc(sizeof(int));
+
+        // Invariant: active_config != NULL
+        *active_config = value++;
+
+        printf("Updater installed new config value: %d\n",
+               *active_config);
+
+        pthread_mutex_unlock(&config_mutex);
+
+        sleep(3);
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t r1, r2, r3, up;
+    int id1 = 1, id2 = 2, id3 = 3;
+
+    // Initial configuration (invariant must hold)
+    active_config = malloc(sizeof(int));
+    *active_config = 42;
+
+    pthread_create(&r1, NULL, reader, &id1);
+    pthread_create(&r2, NULL, reader, &id2);
+    pthread_create(&r3, NULL, reader, &id3);
+    pthread_create(&up, NULL, updater, NULL);
+
+    pthread_join(r1, NULL);
+    pthread_join(r2, NULL);
+    pthread_join(r3, NULL);
+    pthread_join(up, NULL);
+
+    return 0;
+}
+</file>
+
+<file path="mainThreads.c">
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+
+int mails = 0;
+
+void* routine() {
+    for (int i = 0; i < 100; i++) {
+        mails++;
+    }
+}
+
+int main(int argc, char* argv[]) {
+    pthread_t p1, p2;
+    if (pthread_create(&p1, NULL, &routine, NULL) != 0) {
+        return 1;
+    }
+    if (pthread_create(&p2, NULL, &routine, NULL) != 0) {
+        return 2;
+    }
+    if (pthread_join(p1, NULL) != 0) {
+        return 3;
+    }
+    if (pthread_join(p2, NULL) != 0) {
+        return 4;
+    }
+    printf("Mails: %d\n", mails);
+    return 0;
+}
+</file>
+
+<file path="multiAccountTransferSystem.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+// Shared accounts
+int A = 1000, B = 1000, C = 1000;
+
+// Mutexes for each account
+pthread_mutex_t mutexA = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexB = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexC = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+• Thread T1: Transfers 100 from A → B (10 times).
+• Thread T2: Transfers 50 from B → C (20 times).
+• Thread T3: Transfers 25 from C → A (40 times).
+*/
+
+// Utility function to print balances
+void print_balances(const char* msg) {
+    printf("%s | A=%d B=%d C=%d | Total=%d\n",
+           msg, A, B, C, A + B + C);
+}
+
+// Thread T1: A -> B (100) x10
+void* thread1(void* arg) {
+    for (int i = 0; i < 10; i++) {
+        pthread_mutex_lock(&mutexA);
+        pthread_mutex_lock(&mutexB);
+
+        if (A >= 100) {
+            A -= 100;
+            B += 100;
+            print_balances("T1: A -> B (100)");
+        }
+
+        pthread_mutex_unlock(&mutexB);
+        pthread_mutex_unlock(&mutexA);
+
+        usleep(100000);
+    }
+    return NULL;
+}
+
+// Thread T2: B -> C (50) x20
+void* thread2(void* arg) {
+    for (int i = 0; i < 20; i++) {
+        pthread_mutex_lock(&mutexB);
+        pthread_mutex_lock(&mutexC);
+
+        if (B >= 50) {
+            B -= 50;
+            C += 50;
+            print_balances("T2: B -> C (50)");
+        }
+
+        pthread_mutex_unlock(&mutexC);
+        pthread_mutex_unlock(&mutexB);
+
+        usleep(100000);
+    }
+    return NULL;
+}
+
+// Thread T3: C -> A (25) x40
+void* thread3(void* arg) {
+    for (int i = 0; i < 40; i++) {
+        // IMPORTANT: lock A first, then C (global order)
+        pthread_mutex_lock(&mutexA);
+        pthread_mutex_lock(&mutexC);
+
+        if (C >= 25) {
+            C -= 25;
+            A += 25;
+            print_balances("T3: C -> A (25)");
+        }
+
+        pthread_mutex_unlock(&mutexC);
+        pthread_mutex_unlock(&mutexA);
+
+        usleep(100000);
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2, t3;
+
+    print_balances("Initial");
+
+    pthread_create(&t1, NULL, thread1, NULL);
+    pthread_create(&t2, NULL, thread2, NULL);
+    pthread_create(&t3, NULL, thread3, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    pthread_join(t3, NULL);
+
+    print_balances("Final");
+
+    return 0;
+}
+</file>
+
+<file path="navigationLaunch.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+sem_t sem_nav;    // Signal from Fuel -> Navigation
+sem_t sem_launch; // Signal from Navigation -> Launch
+
+void* fuel_thread(void* arg) {
+    sleep(1); // simulate work
+    printf("[Fuel Thread] Fuel system activated. Signal sent.\n");
+    sem_post(&sem_nav); // allow navigation to start
+    return NULL;
+}
+
+void* navigation_thread(void* arg) {
+    printf("[Navigation Thread] Waiting for fuel system...\n");
+    sem_wait(&sem_nav); // wait for fuel
+    sleep(1);
+    printf("[Navigation Thread] Navigation system online. Signal sent.\n");
+    sem_post(&sem_launch); // allow launch
+    return NULL;
+}
+
+void* launch_thread(void* arg) {
+    printf("[Launch Thread] Waiting for navigation system...\n");
+    sem_wait(&sem_launch); // wait for navigation
+    sleep(1);
+    printf("[Launch Thread] Launch sequence initiated!\n");
+    return NULL;
+}
+
+int main() {
+    pthread_t fuel, navigation, launch;
+
+    // Initialize semaphores to 0 (locked)
+    sem_init(&sem_nav, 0, 0);
+    sem_init(&sem_launch, 0, 0);
+
+    // Create threads in ANY order (result will still be sequenced)
+    pthread_create(&launch, NULL, launch_thread, NULL);
+    pthread_create(&navigation, NULL, navigation_thread, NULL);
+    pthread_create(&fuel, NULL, fuel_thread, NULL);
+
+    // Wait for all threads
+    pthread_join(fuel, NULL);
+    pthread_join(navigation, NULL);
+    pthread_join(launch, NULL);
+
+    sem_destroy(&sem_nav);
+    sem_destroy(&sem_launch);
+
+    return 0;
+}
+</file>
+
+<file path="orderedSystem.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+sem_t sem_comm, sem_ctrl;
+
+void* power_thread(void* arg) {
+    sleep(1); // simulate delayed random start
+    printf("[Power Thread] Power Initialized. Signal sent.\n");
+
+    sem_post(&sem_comm); // allow Communication to start
+    return NULL;
+}
+
+void* comm_thread(void* arg) {
+    printf("[Comm Thread] Waiting for Signal...\n");
+    sem_wait(&sem_comm); // wait for Power
+
+    sleep(1); // simulate delay
+    printf("[Comm Thread] Communication Initialized. Signal sent.\n");
+
+    sem_post(&sem_ctrl); // allow Control to start
+    return NULL;
+}
+
+void* control_thread(void* arg) {
+    printf("[Control Thread] Waiting for Signal...\n");
+    sem_wait(&sem_ctrl); // wait for Communication
+
+    sleep(1); // simulate delay
+    printf("[Control Thread] Control System Initialized.\n");
+    return NULL;
+}
+
+int main() {
+    pthread_t power, comm, control;
+
+    sem_init(&sem_comm, 0, 0);
+    sem_init(&sem_ctrl, 0, 0);
+
+    // start threads in random order
+    pthread_create(&control, NULL, control_thread, NULL);
+    pthread_create(&comm, NULL, comm_thread, NULL);
+    pthread_create(&power, NULL, power_thread, NULL);
+
+    pthread_join(power, NULL);
+    pthread_join(comm, NULL);
+    pthread_join(control, NULL);
+
+    sem_destroy(&sem_comm);
+    sem_destroy(&sem_ctrl);
+
+    return 0;
+}
+</file>
+
+<file path="priorityLogging.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <string.h>
+
+#define MAX 10
+
+pthread_mutex_t mutex;
+
+char high_buffer[MAX][50];
+char low_buffer[MAX][50];
+int high_count = 0, low_count = 0;
+
+void* log_thread(void* arg) {
+    char* msg = (char*)arg;
+    pthread_mutex_lock(&mutex);
+
+    if (msg[0] == 'H') {                            // High priority message flag
+        strcpy(high_buffer[high_count++], msg + 2); // skip "H:"
+    } else {
+        strcpy(low_buffer[low_count++], msg + 2); // skip "L:"
+    }
+
+    pthread_mutex_unlock(&mutex);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2, t3, t4;
+
+    pthread_mutex_init(&mutex, NULL);
+
+    // Priority-tagged messages as per input
+    pthread_create(&t1, NULL, log_thread, "L:Network OK");
+    pthread_create(&t2, NULL, log_thread, "H:Disk Failure");
+    pthread_create(&t3, NULL, log_thread, "L:User Login");
+    pthread_create(&t4, NULL, log_thread, "H:Power Surge");
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    pthread_join(t3, NULL);
+    pthread_join(t4, NULL);
+
+    // Buffer dump respecting priority
+    printf("----- Buffer Dump -----\n");
+    for (int i = 0; i < high_count; i++)
+        printf("[HIGH] %s\n", high_buffer[i]);
+
+    for (int i = 0; i < low_count; i++)
+        printf("[LOW] %s\n", low_buffer[i]);
+
+    pthread_mutex_destroy(&mutex);
+    return 0;
+}
+</file>
+
+<file path="processID.c">
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h> // linux specific header for fork()
+
+int main(int argc, char* argv[]) {
+    int id = fork();
+    printf("Current ID is %d\n", id);
+    printf("My Process ID is %d\n", getpid());
+    printf("My Parent Process ID is %d\n", getppid());
+    if (id != 0) {
+        wait(NULL);
+    }
+    return 0;
+}
+</file>
+
+<file path="raceCondition.c">
+#include <stdio.h>
+#include <pthread.h>
+
+int counter = 0; // Shared resource
+
+void* increment(void* arg) {
+    for (int i = 0; i < 100000; i++) {
+        counter++; // Critical section
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+
+    pthread_create(&t1, NULL, increment, NULL);
+    // two threads are running concurrently  - the main thread and the increment thread (t1)
+    pthread_create(&t2, NULL, increment, NULL);
+    // now three threads are running concurrently - the main thread, increment thread (t1) and increment thread (t2)
+    pthread_join(t1, NULL);
+    // this is a blocking call - the main thread will wait here until t1 finishes execution
+    pthread_join(t2, NULL);
+    // this is a blocking call - the main thread will wait here until t2 finishes execution
+    printf("Final counter value: %d\n", counter);
+    return 0;
+}
+</file>
+
+<file path="raceConditionUsingMutex.c">
+#include <stdio.h>
+#include <pthread.h>
+
+int counter = 0;      // Shared resource
+pthread_mutex_t lock; // Mutex
+
+void* increment(void* arg) {
+    for (int i = 0; i < 100000; i++) {
+        pthread_mutex_lock(&lock); // Enter critical region
+        counter++;
+        pthread_mutex_unlock(&lock); // Exit critical region
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+
+    pthread_mutex_init(&lock, NULL); // Initialize mutex
+
+    pthread_create(&t1, NULL, increment, NULL);
+    pthread_create(&t2, NULL, increment, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    pthread_mutex_destroy(&lock); // Destroy mutex
+
+    printf("Final counter value: %d\n", counter);
+    return 0;
+}
+</file>
+
+<file path="raceConditionUsingSemaphore.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h> // Required for semaphores
+
+int counter = 0; // Shared resource
+
+sem_t sem; // Semaphore
+
+void* increment(void* arg) {
+    for (int i = 0; i < 100000; i++) {
+        sem_wait(&sem); // Enter critical section
+        counter++;      // Critical section
+        sem_post(&sem); // Exit critical section
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    // Initialize semaphore with value 1 (for mutual exclusion)
+    sem_init(&sem, 0, 1); // Initialize semaphore
+
+    pthread_create(&t1, NULL, increment, NULL);
+    pthread_create(&t2, NULL, increment, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    sem_destroy(&sem); // Cleanup
+
+    printf("Final counter value: %d\n", counter);
+    return 0;
+}
+</file>
+
+<file path="readerWriterSynchronization.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+int data = 0;
+int read_count = 0;
+
+sem_t mutex;       // protects read_count
+sem_t write_block; // blocks writers/readers
+
+void* reader(void* arg) {
+    int id = *(int*)arg;
+    printf("[Reader %d] Waiting to read...\n", id);
+
+    // Entry section
+    sem_wait(&mutex);
+    read_count++;
+    if (read_count == 1) {
+        sem_wait(&write_block); // first reader blocks writers
+    }
+    sem_post(&mutex);
+
+    // Critical section (reading)
+    printf("[Reader %d] Reading data: %d\n", id, data);
+    sleep(1);
+
+    // Exit section
+    sem_wait(&mutex);
+    read_count--;
+    if (read_count == 0) {
+        sem_post(&write_block); // last reader allows writers
+    }
+    sem_post(&mutex);
+
+    return NULL;
+}
+
+void* writer(void* arg) {
+    int id = *(int*)arg;
+    printf("[Writer %d] Waiting to write...\n", id);
+
+    sem_wait(&write_block); // Writer gets exclusive access
+
+    // Critical section (writing)
+    printf("[Writer %d] Writing data...\n", id);
+    data++;
+    sleep(1);
+    printf("[Writer %d] Updated data to %d\n", id, data);
+
+    sem_post(&write_block);
+
+    return NULL;
+}
+
+int main() {
+    pthread_t r[3], w[1];
+    int r_id[3] = {1, 2, 3};
+    int w_id[1] = {1};
+
+    sem_init(&mutex, 0, 1);
+    sem_init(&write_block, 0, 1);
+
+    // Start threads in mixed order to simulate randomness
+    pthread_create(&r[0], NULL, reader, &r_id[0]);
+    pthread_create(&r[1], NULL, reader, &r_id[1]);
+    pthread_create(&w[0], NULL, writer, &w_id[0]);
+    sleep(1); // delay to simulate next arrivals
+    pthread_create(&r[2], NULL, reader, &r_id[2]);
+
+    for (int i = 0; i < 3; i++)
+        pthread_join(r[i], NULL);
+    pthread_join(w[0], NULL);
+
+    sem_destroy(&mutex);
+    sem_destroy(&write_block);
+
+    return 0;
+}
+</file>
+
+<file path="simpleRoutine.c">
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+
+void* routine(void* arg) {
+    printf("Test for threads\n");
+    sleep(3);
+    printf("Ending Thread\n");
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+
+    pthread_create(&t1, NULL, routine, NULL);
+    pthread_create(&t2, NULL, routine, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    return 0;
+}
+</file>
+
+<file path="transactionServer.c">
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define NUM_CLIENTS 6
+#define SERVER_CAPACITY 3
+
+sem_t serverSlots;
+pthread_mutex_t lock;
+int status[NUM_CLIENTS] = {0};
+int running = 1;
+
+void* client_thread(void* arg) {
+    int id = *(int*)arg;
+
+    // Request server access
+    sem_wait(&serverSlots);
+
+    // Mark status = True
+    pthread_mutex_lock(&lock);
+    status[id] = 1;
+    pthread_mutex_unlock(&lock);
+
+    // Simulate processing time
+    sleep(1);
+
+    // Mark status = False
+    pthread_mutex_lock(&lock);
+    status[id] = 0;
+    pthread_mutex_unlock(&lock);
+
+    // Release slot
+    sem_post(&serverSlots);
+
+    return NULL;
+}
+
+void* monitor_thread(void* arg) {
+    while (running) {
+        pthread_mutex_lock(&lock);
+        for (int i = 0; i < NUM_CLIENTS; i++) {
+            printf("C%d=%s ", i + 1, status[i] ? "True" : "False");
+        }
+        printf("\n");
+        pthread_mutex_unlock(&lock);
+
+        usleep(500000); // print every 0.5 sec
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t clients[NUM_CLIENTS], monitor;
+    int ids[NUM_CLIENTS];
+
+    sem_init(&serverSlots, 0, SERVER_CAPACITY);
+    pthread_mutex_init(&lock, NULL);
+
+    // Start monitor
+    pthread_create(&monitor, NULL, monitor_thread, NULL);
+
+    // Start clients
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+        ids[i] = i;
+        pthread_create(&clients[i], NULL, client_thread, &ids[i]);
+        usleep(100000); // small stagger to simulate near-simultaneous arrival
+    }
+
+    // Wait for clients to finish
+    for (int i = 0; i < NUM_CLIENTS; i++)
+        pthread_join(clients[i], NULL);
+
+    running = 0;
+    pthread_join(monitor, NULL);
+
+    sem_destroy(&serverSlots);
+    pthread_mutex_destroy(&lock);
+
+    return 0;
+}
+</file>
+
+</files>
